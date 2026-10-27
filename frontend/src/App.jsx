@@ -8,11 +8,13 @@ import Splash from "./components/Splash.jsx";
 
 // Las pantallas se cargan recién cuando se visitan (la landing y el acceso, que son lo primero que se ve, van directas).
 const Boliches = lazy(() => import("./pages/Boliches.jsx"));
+const Explorar = lazy(() => import("./pages/Explorar.jsx"));
+const PaginaBoliche = lazy(() => import("./pages/PaginaBoliche.jsx"));
 const BolicheDetalle = lazy(() => import("./pages/BolicheDetalle.jsx"));
 const Usuarios = lazy(() => import("./pages/Usuarios.jsx"));
 
 // Mapa de rutas de toda la app.
-//   Públicas:  /  /login  /registro
+//   Públicas:  /  /login  /registro  /explorar (lista de boliches)  /b/:subdominio (página de un boliche)
 //   Privadas:  /boliches (superadmin y admin) · /boliches/:id (ficha: todos los del boliche) · /usuarios (superadmin)
 //              Van dentro de RutaProtegida (exige sesión y rol) y de Layout (sidebar + barra móvil).
 //   Cualquier otra URL vuelve a la landing.
@@ -26,6 +28,8 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Acceso modo="login" />} />
           <Route path="/registro" element={<Acceso modo="registro" />} />
+          <Route path="/explorar" element={<Explorar />} />
+          <Route path="/b/:subdominio" element={<PaginaBoliche />} />
 
           <Route
             element={

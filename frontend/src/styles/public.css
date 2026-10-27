@@ -1,5 +1,4 @@
-/* Página pública del evento (/evento/:token) que ve el cliente.
-   Usa tarjetas, tabla y avisos de Ant Design; acá solo la estructura y los textos grandes. */
+/* Páginas públicas: la lista de boliches y la página de cada uno (parte del cliente). */
 
 .pub {
   min-height: 100vh;
@@ -57,4 +56,58 @@
     padding: 20px 18px 32px;
     gap: 28px;
   }
+}
+
+/* ---------- Lista de boliches y página de cada boliche (parte pública de la plataforma) ---------- */
+
+.pub-ancho {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pub-ancho h2 {
+  font: 700 26px var(--display);
+  margin-top: 12px;
+}
+
+.pub-lead {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--soft);
+  max-width: 720px;
+}
+
+.pub-buscador {
+  max-width: 480px;
+}
+
+.grilla-boliches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.grilla-boliches .ant-card-body h3 {
+  font: 700 20px var(--display);
+  margin-bottom: 8px;
+}
+
+.grilla-boliches .ant-card-body p {
+  margin: 0 0 8px;
+}
+
+.pub-fotos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.pub-fotos .ant-image,
+.pub-fotos img {
+  width: 100%;
+  border-radius: 12px;
 }
