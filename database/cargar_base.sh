@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Crea la base (si no existe) y carga el esquema, los catálogos y los datos de prueba en el Postgres local.
+# Crea la base (si no existe) y carga el esquema y los datos de prueba en el Postgres local.
 # Usa la conexión del .env (DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME).
-# Es lo mismo que hacer a mano en pgAdmin 4: crear la base y ejecutar 00_schema.sql, 01_datos_iniciales.sql y 02_datos_prueba.sql.
+# Es lo mismo que hacer a mano en pgAdmin 4: crear la base y ejecutar 00_schema.sql y 01_datos_prueba.sql.
 #   ./database/cargar_base.sh           -> crea la base y la carga (si ya tiene tablas, no toca nada)
 #   ./database/cargar_base.sh --reset   -> BORRA la base y la vuelve a crear (se pierden los datos)
 set -euo pipefail
@@ -29,7 +29,7 @@ if [ -n "$("${PSQL[@]}" -d "$DB_NAME" -Atc "SELECT to_regclass('public.empresas'
   exit 0
 fi
 
-for archivo in 00_schema.sql 01_datos_iniciales.sql 02_datos_prueba.sql; do
+for archivo in 00_schema.sql 01_datos_prueba.sql; do
   echo ">> Ejecutando $archivo..."
   "${PSQL[@]}" -d "$DB_NAME" -f "database/$archivo"
 done

@@ -229,7 +229,7 @@ Estas decisiones no están en la página de Notion: las tomamos para poder avanz
 | Subdominio | Cada boliche guarda su `subdominio` único. Mientras no haya dominio, la página pública se ve en `/b/:subdominio` | El dominio sigue sin definir |
 | Contraseñas | bcrypt; el login pide email y contraseña | Lo que dice Notion; la verificación extra de admins llega en una fase posterior |
 | Diseño | **Se conserva el estilo actual del front.** El front se adapta a la plataforma (paneles, pantallas y menús por rol) reutilizando sus componentes y su estilo; Space Grotesk + glassmorphism (Notion) queda pendiente | Indicación del equipo: dejar el estilo igual |
-| Convivencia con lo anterior | La plataforma vive en un **esquema aparte de PostgreSQL (`plataforma`)** y en rutas nuevas (`/api/plataforma/...`). Las tablas y rutas del sistema anterior (gestor de una organizadora) siguen en `public` y `/api` sin tocar; la rama `main` conserva el sistema anterior completo | No perder lo hecho, y poder volver atrás |
+| Convivencia con lo anterior | El sistema anterior (gestor de una organizadora) **se reemplaza** en esta rama: base, API y pantallas son las de la plataforma. La rama `main` conserva el sistema anterior completo | Indicación del equipo: cambiar todo salvo el estilo; y poder volver atrás |
 
 ---
 
