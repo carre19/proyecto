@@ -414,3 +414,8 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
 }
+
+/* Con la barra superior sin buscador, la etiqueta del rol queda a la derecha. */
+.topbar > span:first-child:empty {
+  flex: 1;
+}
