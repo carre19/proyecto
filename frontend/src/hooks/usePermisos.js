@@ -1,37 +1,39 @@
 import { useAuth } from "../context/AuthContext.jsx";
 
-// Qué puede hacer el usuario actual. Solo sirve para mostrar u ocultar botones:
+// Qué puede hacer la persona actual. Solo sirve para mostrar u ocultar botones:
 // el back vuelve a verificar todo y es quien decide.
-//   Organizador  -> clientes, eventos propios (propuesta, servicios, tareas, exclusiones), proveedores y servicios
-//   Responsable  -> la dueña de la empresa: aprueba propuestas, gestiona el personal y sus roles, decide cancelaciones
-//                   de la organizadora y además puede todo lo del organizador (en cualquier evento) y del coordinador
-//   Coordinador  -> situación de cada proveedor, estado de cualquier tarea y avisos de cancelación
-//   Todos        -> consultan todo y registran cambios relevantes
+//   Superadmin   -> todo, en todos los boliches
+//   Admin        -> sus boliches: datos del local, equipo de RRPP y comisión, eventos
+//   RRPP manager -> su boliche: alta y asignación de RRPP, y sus eventos
+//   RRPP         -> consulta su boliche
+//   Cliente      -> solo lo público
 export default function usePermisos() {
   const { usuario } = useAuth();
-  const roles = usuario?.roles ?? [];
-  const yo = usuario?.id_personal;
+  const rol = usuario?.rol;
+  const boliches = usuario?.boliches ?? [];
 
-  const esResponsable = roles.includes("responsable");
-  // La responsable (dueña de la empresa) puede hacer todo lo del organizador y del coordinador (el back lo aplica igual).
-  const esOrganizador = roles.includes("organizador") || esResponsable;
-  const esCoordinador = roles.includes("coordinador") || esResponsable;
-  const esSuperadmin = roles.includes("superadmin");
-  // "Dueño" de un evento: su organizador. La responsable puede trabajar sobre todos los eventos de la empresa.
-  const esDuenoDe = (evento) =>
-    esResponsable || (roles.includes("organizador") && evento?.id_organizador != null && evento.id_organizador === yo);
+  const esSuperadmin = rol === "superadmin";
+  const esAdmin = rol === "admin";
+  const esManager = rol === "rrpp_manager";
+  const esRrpp = rol === "rrpp";
+  const esCliente = rol === "cliente";
 
   return {
-    yo,
-    roles,
-    tieneRol: roles.length > 0,
-    esOrganizador,
-    esResponsable,
-    esCoordinador,
+    yo: usuario?.id,
+    rol,
+    boliches,
     esSuperadmin,
-    // El superadmin sin un rol de la organizadora solo administra las empresas (ver soloEmpresas en Layout).
-    soloEmpresas: esSuperadmin && !esOrganizador && !esResponsable && !esCoordinador,
-    esDuenoDe,
-    puedeCambiarEstadoTarea: (tarea) => esCoordinador || tarea?.id_personal === yo,
+    esAdmin,
+    esManager,
+    esRrpp,
+    esCliente,
+    // Tiene panel (todos menos el cliente).
+    tienePanel: Boolean(rol) && !esCliente,
+    // Quién puede crear boliches, editar datos del local, armar el equipo y crear eventos.
+    puedeCrearBoliches: esSuperadmin,
+    puedeEditarLocal: esSuperadmin || esAdmin,
+    puedeVerEquipo: esSuperadmin || esAdmin || esManager,
+    puedeFijarComision: esSuperadmin || esAdmin,
+    puedeCrearEventos: esSuperadmin || esAdmin || esManager,
   };
 }

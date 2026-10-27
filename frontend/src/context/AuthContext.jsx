@@ -2,10 +2,10 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import * as authService from "../services/authService";
 
 // Sesión global. Guarda el token y el usuario en localStorage para sobrevivir a recargas.
-//   usuario   -> datos del usuario logueado (o null), con sus roles
+//   usuario   -> datos del usuario logueado (o null): su rol y los boliches a los que accede
 //   ingresar  -> hace login y guarda la sesión
 //   salir     -> borra la sesión
-//   refrescar -> vuelve a pedir el perfil al back (los roles pueden cambiar mientras la sesión sigue abierta)
+//   refrescar -> vuelve a pedir el perfil al back (el rol y los boliches pueden cambiar mientras la sesión sigue abierta)
 // Uso en cualquier componente: const { usuario, ingresar, salir } = useAuth();
 const AuthContext = createContext(null);
 
@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // Al abrir la app se actualizan los roles: la responsable pudo haberlos cambiado.
+  // Al abrir la app se actualizan el rol y los boliches: el superadmin o el admin pudieron cambiarlos.
   useEffect(() => {
     refrescar();
   }, [refrescar]);

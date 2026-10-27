@@ -6,7 +6,7 @@ import { soloFecha } from "../utils/formato.js";
 // Formulario modal genérico para crear/editar, hecho con Ant Design (Modal + Form).
 // Se arma solo a partir de la lista "campos":
 //   name -> clave del dato | label -> texto visible
-//   type -> text (por defecto), number, date, email, password, textarea, select o multiselect (lista de valores)
+//   type -> text (por defecto), number, date, datetime (fecha y hora), email, password, textarea, select o multiselect (lista de valores)
 //   required, full (ocupa todo el ancho), step (solo number), options [{ value, label }] (solo select)
 //   defecto -> valor inicial al crear
 //   desde   -> (item) => valor inicial al editar, cuando el dato del registro no tiene la forma del campo
@@ -22,6 +22,7 @@ function valorInicial(campo, item) {
   const v = item && campo.desde ? campo.desde(item) : item?.[campo.name] ?? campo.defecto;
   if (v === undefined || v === null || v === "") return undefined;
   if (campo.type === "date") return dayjs(soloFecha(v));
+  if (campo.type === "datetime") return dayjs(v);
   if (campo.type === "number") return Number(v);
   if (campo.type === "multiselect") return Array.isArray(v) ? v : [];
   return v;
@@ -34,7 +35,7 @@ function limpiar(campos, valores) {
     const v = valores[c.name];
     if (c.type === "multiselect") salida[c.name] = v ?? [];
     else if (v === undefined || v === null || v === "") salida[c.name] = null;
-    else salida[c.name] = c.type === "date" ? v.format(FORMATO_BACK) : v;
+    else salida[c.name] = c.type === "date" ? v.format(FORMATO_BACK) : c.type === "datetime" ? v.toISOString() : v;
   }
   return salida;
 }
@@ -63,6 +64,8 @@ function Control({ campo, ...props }) {
       return <InputNumber min={0} step={campo.step ?? 1} style={{ width: "100%" }} {...props} />;
     case "date":
       return <DatePicker format="DD/MM/YYYY" placeholder="dd/mm/aaaa" style={{ width: "100%" }} {...props} />;
+    case "datetime":
+      return <DatePicker showTime={{ format: "HH:mm", minuteStep: 15 }} format="DD/MM/YYYY HH:mm" placeholder="dd/mm/aaaa hh:mm" style={{ width: "100%" }} {...props} />;
     case "email":
       return <Input type="email" autoComplete="off" {...props} />;
     case "password":

@@ -4,38 +4,39 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import BotonTema from "../components/BotonTema.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { inicioDe } from "../utils/formato.js";
 
 // Landing pública: presentación del producto. Los textos están en estas listas (FUNCIONES, PASOS, FAQ).
 // Los botones y el FAQ (acordeón) son de Ant Design.
 const FUNCIONES = [
-  { titulo: "Eventos", texto: "Fecha, sede, asistentes y estado de cada fiesta.", color: "var(--pink)" },
-  { titulo: "Roles", texto: "Cada persona del equipo con sus permisos.", color: "var(--amber)" },
-  { titulo: "Calendario", texto: "Toda la temporada, semana por semana.", color: "var(--lime)" },
-  { titulo: "En vivo", texto: "Qué está listo, qué falta y quién está a cargo.", color: "var(--cyan)" },
+  { titulo: "Boliches", texto: "Varios locales y bares en una sola plataforma, cada uno con su propia página.", color: "var(--pink)" },
+  { titulo: "Eventos", texto: "Fecha, artistas, edad mínima, dress code y sector VIP de cada noche.", color: "var(--amber)" },
+  { titulo: "Equipo", texto: "Admins, RRPP managers y RRPP, cada uno con su panel y su comisión.", color: "var(--lime)" },
+  { titulo: "Entradas", texto: "Por tandas y VIP, con precio virtual y de puerta, y un QR de un solo uso.", color: "var(--cyan)" },
 ];
 
 const PASOS = [
-  { n: 1, titulo: "Registrá tu equipo", texto: "Empresas, clientes y personal.", color: "var(--pink)" },
-  { n: 2, titulo: "Sumá a tu equipo", texto: "Un rol para cada persona.", color: "var(--amber)" },
-  { n: 3, titulo: "Publicá la fiesta", texto: "Creá, aprobá, salí a la pista.", color: "var(--cyan)" },
+  { n: 1, titulo: "Sumá tu boliche", texto: "La plataforma lo da de alta con su página y su admin.", color: "var(--pink)" },
+  { n: 2, titulo: "Armá tu equipo", texto: "Managers y RRPP, con la comisión que vos definas.", color: "var(--amber)" },
+  { n: 3, titulo: "Publicá la noche", texto: "Creá el evento y el público lo ve en la página del boliche.", color: "var(--cyan)" },
 ];
 
 const FAQ = [
   {
-    pregunta: "¿Qué diferencia hay entre los roles?",
-    respuesta: "El responsable administra, el coordinador aprueba y el organizador crea sus eventos.",
+    pregunta: "¿Qué roles hay?",
+    respuesta: "Superadmin (la plataforma), admin de boliche (los dueños), RRPP manager, RRPP y cliente. Cada uno tiene su propio panel.",
   },
   {
-    pregunta: "¿Puedo manejar varias salas?",
-    respuesta: "Sí. Cada evento tiene su propia sala o sede y su estado, así que podés organizar fiestas en distintos espacios a la vez y verlas juntas en el calendario.",
+    pregunta: "¿Puedo tener varios locales?",
+    respuesta: "Sí. Un admin puede manejar varios boliches y cada uno se gestiona por separado, sin mezclar sus datos.",
   },
   {
-    pregunta: "¿Funciona desde el celular?",
-    respuesta: "Sí. El panel se adapta a la pantalla del teléfono, con menú inferior y tablas en formato de tarjetas, y el enlace que recibe el cliente también se ve bien en el celular.",
+    pregunta: "¿Cada local ve la información de los demás?",
+    respuesta: "No. Cada boliche ve únicamente sus propios datos; solo el superadmin de la plataforma ve todos.",
   },
   {
-    pregunta: "¿Cuánto cuesta?",
-    respuesta: "Crear tu cuenta es gratis. Podés registrarte y empezar a cargar tus eventos, clientes y propuestas sin costo.",
+    pregunta: "¿Necesito una cuenta para ver los eventos?",
+    respuesta: "No. Cualquier persona puede ver los boliches y sus próximos eventos. La cuenta es opcional y sirve para recibir descuentos.",
   },
 ];
 
@@ -75,16 +76,17 @@ export default function Landing() {
   useReveal(raiz);
 
   // Quien ya tiene sesión va directo al panel.
-  if (usuario) return <Navigate to="/eventos" replace />;
+  if (usuario) return <Navigate to={inicioDe(usuario)} replace />;
 
   return (
     <div className="landing" ref={raiz}>
       <header className={`land-nav ${scrolled ? "scrolled" : ""}`}>
-        <span>NOCTIS / GESTOR DE FIESTAS</span>
+        <span>NOCTIS / PLATAFORMA DE BOLICHES</span>
         <nav>
           <Button shape="round" href="#funcionalidades">Funcionalidades</Button>
           <Button shape="round" href="#como-funciona">Cómo funciona</Button>
           <Button shape="round" href="#faq">FAQ</Button>
+          <Button shape="round" onClick={() => navigate("/explorar")}>Ver boliches</Button>
           <BotonTema />
           <Button type="primary" shape="round" icon={<LoginOutlined />} onClick={() => navigate("/login")}>
             Ingresar
@@ -95,15 +97,15 @@ export default function Landing() {
       <section className="land-hero">
         <h1 className="land-title">NOC<br /><span>TIS</span></h1>
         <div className="land-sub">
-          <p className="reveal d1">El gestor de fiestas para boliches.</p>
+          <p className="reveal d1">Todos tus boliches y bares, en un solo lugar.</p>
           <ul className="reveal d2">
-            <li>RESPONSABLES</li>
-            <li>COORDINADORES</li>
-            <li>ORGANIZADORES</li>
+            <li>ADMINS</li>
+            <li>RRPP MANAGERS</li>
+            <li>RRPP</li>
           </ul>
           <div className="end reveal d3">
-            <Button type="primary" size="large" shape="round" onClick={() => navigate("/registro")}>
-              Crear cuenta gratis <ArrowRightOutlined />
+            <Button type="primary" size="large" shape="round" onClick={() => navigate("/explorar")}>
+              Ver los boliches <ArrowRightOutlined />
             </Button>
           </div>
         </div>

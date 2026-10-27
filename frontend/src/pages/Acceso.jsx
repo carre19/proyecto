@@ -1,45 +1,38 @@
-import { ArrowLeftOutlined, BankOutlined, LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
-import { Alert, Button, Form, Input, Segmented, Select } from "antd";
+import { ArrowLeftOutlined, IdcardOutlined, LockOutlined, MailOutlined, PhoneOutlined, UserOutlined } from "@ant-design/icons";
+import { Alert, Button, Form, Input, Segmented } from "antd";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import BotonTema from "../components/BotonTema.jsx";
 import Logo from "../components/Logo.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { mensajeError } from "../services/api.js";
-import { listarEmpresas, registrar } from "../services/authService.js";
+import { registrar } from "../services/authService.js";
+import { inicioDe } from "../utils/formato.js";
 
 // Login y registro comparten pantalla: modo "login" o "registro" según la ruta.
 // El formulario es de Ant Design (Form): valida los campos antes de llamar a onFinish.
+// Crear una cuenta es solo para clientes: el resto de los roles los da de alta quien corresponde (superadmin, admin o manager).
 export default function Acceso({ modo }) {
   const esLogin = modo === "login";
   const { usuario, ingresar } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const [empresas, setEmpresas] = useState([]);
 
   // Al pasar de login a registro (o al revés) se limpia el error anterior.
   useEffect(() => setError(""), [modo]);
 
-  // Al crear la cuenta hay que elegir a qué empresa pertenece quien se registra.
-  useEffect(() => {
-    if (esLogin) return;
-    listarEmpresas()
-      .then(setEmpresas)
-      .catch((err) => setError(mensajeError(err, "No se pudieron cargar las empresas")));
-  }, [esLogin]);
-
   // Si ya hay sesión no tiene sentido ver esta pantalla.
-  if (usuario) return <Navigate to="/eventos" replace />;
+  if (usuario) return <Navigate to={inicioDe(usuario)} replace />;
 
-  // valores = { nombre?, id_empresa?, email, password } ya validados por antd.
+  // valores = { nombre?, apellido?, dni?, telefono?, email, password } ya validados por antd.
   const enviar = async (valores) => {
     setError("");
     setEnviando(true);
     try {
       if (!esLogin) await registrar(valores);
+      // Al entrar, cada rol va a su pantalla de inicio (la Navigate de arriba se encarga cuando cambia la sesión).
       await ingresar(valores.email, valores.password);
-      navigate("/eventos");
     } catch (err) {
       setError(mensajeError(err, esLogin ? "Error al iniciar sesión" : "Error al crear la cuenta"));
       setEnviando(false);
@@ -63,7 +56,7 @@ export default function Acceso({ modo }) {
         {esLogin ? (
           <h2 key="l">Volvé<br /><span style={{ color: "var(--pink)" }}>a la pista.</span></h2>
         ) : (
-          <h2 key="r">Sumate<br /><span style={{ color: "var(--lime)" }}>al equipo.</span></h2>
+          <h2 key="r">Sumate<br /><span style={{ color: "var(--lime)" }}>a la noche.</span></h2>
         )}
       </div>
 
@@ -98,15 +91,14 @@ export default function Acceso({ modo }) {
           )}
 
           {!esLogin && (
-            <Form.Item name="id_empresa" label="Empresa" rules={[{ required: true, message: "Elegí tu empresa" }]}>
-              <Select
-                showSearch
-                optionFilterProp="label"
-                suffixIcon={<BankOutlined />}
-                placeholder="Elegí tu empresa"
-                options={empresas.map((e) => ({ value: e.id_empresa, label: e.nombre }))}
-              />
-            </Form.Item>
+            <>
+              <Form.Item name="dni" label="DNI (opcional)" rules={[{ pattern: /^\d{7,9}$/, message: "Entre 7 y 9 números, sin puntos" }]}>
+                <Input prefix={<IdcardOutlined />} placeholder="Sin puntos" inputMode="numeric" />
+              </Form.Item>
+              <Form.Item name="telefono" label="Teléfono (opcional)">
+                <Input prefix={<PhoneOutlined />} placeholder="351 000 0000" autoComplete="tel" />
+              </Form.Item>
+            </>
           )}
 
           <Form.Item

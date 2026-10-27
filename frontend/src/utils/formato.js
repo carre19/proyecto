@@ -47,6 +47,39 @@ export const nombreCompleto = (p) => p?.nombre_completo || [p?.nombre, p?.apelli
 // Línea de contacto: teléfono y email separados por "·" (lo que haya cargado).
 export const contacto = (...datos) => datos.filter(Boolean).join(" · ");
 
+// "Sáb 5 Feb · 23:30": fecha y hora de un evento (viene como fecha completa con zona horaria).
+export const fechaHora = (valor) => {
+  if (!valor) return "Sin fecha";
+  const d = new Date(valor);
+  if (Number.isNaN(d.getTime())) return "Sin fecha";
+  const dia = cap(d.toLocaleDateString("es-AR", { weekday: "short" }).replace(".", ""));
+  const mes = cap(d.toLocaleDateString("es-AR", { month: "short" }).replace(".", ""));
+  const anio = d.getFullYear() !== new Date().getFullYear() ? ` ${d.getFullYear()}` : "";
+  const hora = d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${dia} ${d.getDate()} ${mes}${anio} · ${hora}`;
+};
+
+// Los 5 roles de la plataforma, como se muestran.
+export const ROLES = {
+  superadmin: "Superadmin",
+  admin: "Admin de boliche",
+  rrpp_manager: "RRPP manager",
+  rrpp: "RRPP",
+  cliente: "Cliente",
+};
+export const rolDe = (usuario) => ROLES[usuario?.rol] ?? "Sin rol";
+
+// A dónde va cada persona al entrar: el superadmin y el admin a sus boliches, el manager y el RRPP directo a su boliche,
+// y el cliente a explorar los boliches.
+export const inicioDe = (usuario) => {
+  if (!usuario) return "/login";
+  if (usuario.rol === "cliente") return "/explorar";
+  if ((usuario.rol === "rrpp_manager" || usuario.rol === "rrpp") && usuario.boliches?.length) {
+    return `/boliches/${usuario.boliches[0].id_boliche}`;
+  }
+  return "/boliches";
+};
+
 export const iniciales = (nombre = "") =>
   nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("") || "?";
 

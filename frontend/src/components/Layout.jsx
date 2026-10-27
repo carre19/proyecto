@@ -1,40 +1,29 @@
-import {
-  AlertOutlined,
-  AppstoreOutlined,
-  BankOutlined,
-  CalendarOutlined,
-  CheckSquareOutlined,
-  FileTextOutlined,
-  IdcardOutlined,
-  LogoutOutlined,
-  ShopOutlined,
-  TeamOutlined,
-} from "@ant-design/icons";
-import { Avatar, Button, Dropdown, Menu, Tooltip } from "antd";
+import { LogoutOutlined, ShopOutlined, TeamOutlined } from "@ant-design/icons";
+import { Avatar, Button, Dropdown, Menu, Result, Tooltip } from "antd";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import usePermisos from "../hooks/usePermisos.js";
-import { iniciales } from "../utils/formato.js";
+import { iniciales, inicioDe, rolDe } from "../utils/formato.js";
 import BotonTema from "./BotonTema.jsx";
 import Logo from "./Logo.jsx";
-import SinRol from "./SinRol.jsx";
 
-// Secciones del panel: alimentan el menú lateral (escritorio) y la barra inferior (móvil).
-export const SECCIONES = [
-  { to: "/pendientes", label: "Pendientes", icono: <AlertOutlined /> },
-  { to: "/eventos", label: "Eventos", icono: <CalendarOutlined /> },
-  { to: "/propuestas", label: "Propuestas", icono: <FileTextOutlined /> },
-  { to: "/tareas", label: "Tareas", icono: <CheckSquareOutlined /> },
-  { to: "/clientes", label: "Clientes", icono: <TeamOutlined /> },
-  { to: "/proveedores", label: "Proveedores", icono: <ShopOutlined /> },
-  { to: "/servicios", label: "Servicios", icono: <AppstoreOutlined /> },
-  { to: "/equipo", label: "Equipo", icono: <IdcardOutlined /> },
-  { to: "/empresas", label: "Empresas", icono: <BankOutlined /> },
-];
-
-// Una persona puede tener varios roles: se muestran todos ("Organizador · Coordinador").
-export const rolDe = (usuario) =>
-  usuario?.roles?.length ? usuario.roles.map((r) => r.charAt(0).toUpperCase() + r.slice(1)).join(" · ") : "Sin rol";
+// Secciones del menú de cada rol (menú lateral en escritorio y barra inferior en móvil):
+//   superadmin -> Boliches y Usuarios | admin -> Mis boliches | manager y RRPP -> directo a su boliche
+export const seccionesDe = (usuario) => {
+  switch (usuario?.rol) {
+    case "superadmin":
+      return [
+        { to: "/boliches", label: "Boliches", icono: <ShopOutlined /> },
+        { to: "/usuarios", label: "Usuarios", icono: <TeamOutlined /> },
+      ];
+    case "admin":
+      return [{ to: "/boliches", label: "Mis boliches", icono: <ShopOutlined /> }];
+    case "rrpp_manager":
+    case "rrpp":
+      return usuario.boliches?.length ? [{ to: inicioDe(usuario), label: "Mi boliche", icono: <ShopOutlined /> }] : [];
+    default:
+      return [];
+  }
+};
 
 // Estilo del círculo con las iniciales del usuario.
 const ESTILO_AVATAR = { background: "var(--amber)", color: "var(--on-primary)", fontWeight: 700 };
@@ -43,27 +32,21 @@ const ESTILO_AVATAR = { background: "var(--amber)", color: "var(--on-primary)", 
 // <Outlet /> es donde React Router dibuja la página activa (Eventos, Clientes, etc.).
 export default function Layout() {
   const { usuario, salir } = useAuth();
-  const { soloEmpresas, tieneRol, esSuperadmin } = usePermisos();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  // Sin rol no hay secciones a las que entrar. Empresas es solo del superadmin, y el superadmin
-  // (sin un rol de la organizadora) no ve ni entra a las demás secciones.
-  const secciones = !tieneRol
-    ? []
-    : soloEmpresas
-      ? SECCIONES.filter((s) => s.to === "/empresas")
-      : SECCIONES.filter((s) => s.to !== "/empresas" || esSuperadmin);
-  const inicio = soloEmpresas ? "/empresas" : "/eventos";
-  if (soloEmpresas && !pathname.startsWith("/empresas")) return <Navigate to="/empresas" replace />;
-  if (!esSuperadmin && pathname.startsWith("/empresas")) return <Navigate to="/eventos" replace />;
+  // El cliente no tiene panel: va a la parte pública.
+  if (usuario?.rol === "cliente") return <Navigate to="/explorar" replace />;
+
+  const secciones = seccionesDe(usuario);
+  const inicio = inicioDe(usuario);
 
   const cerrarSesion = () => {
     salir();
     navigate("/login");
   };
 
-  const nombre = usuario?.nombre ?? usuario?.email;
+  const nombre = usuario?.nombre_completo ?? usuario?.email;
 
   return (
     <div className="shell">
@@ -74,7 +57,7 @@ export default function Layout() {
         <Menu
           mode="inline"
           className="menu-lateral"
-          selectedKeys={[secciones.find((s) => pathname.startsWith(s.to))?.to ?? pathname]}
+          selectedKeys={[secciones.find((s) => pathname === s.to || pathname.startsWith(`${s.to}/`))?.to ?? pathname]}
           items={secciones.map((s) => ({ key: s.to, icon: s.icono, label: s.label }))}
           onClick={({ key }) => navigate(key)}
         />
@@ -82,7 +65,7 @@ export default function Layout() {
         <BotonTema bloque className="boton-tema--side" />
 
         <div className="me">
-          <Avatar style={ESTILO_AVATAR}>{iniciales(usuario?.nombre)}</Avatar>
+          <Avatar style={ESTILO_AVATAR}>{iniciales(usuario?.nombre_completo)}</Avatar>
           <div className="who">
             <b>{nombre}</b>
             <span>{rolDe(usuario)}</span>
@@ -102,13 +85,24 @@ export default function Layout() {
           menu={{ items: [{ key: "salir", icon: <LogoutOutlined />, label: "Cerrar sesión", onClick: cerrarSesion }] }}
         >
           <Avatar style={{ ...ESTILO_AVATAR, cursor: "pointer" }} size={40}>
-            {iniciales(usuario?.nombre)}
+            {iniciales(usuario?.nombre_completo)}
           </Avatar>
         </Dropdown>
       </div>
 
-      {/* Sin rol asignado no hay nada que mostrar: se pide la autorización de la responsable. */}
-      {usuario?.roles?.length ? <Outlet /> : <SinRol onSalir={cerrarSesion} />}
+      {/* Manager o RRPP que todavía no están en el equipo de ningún boliche: no hay nada que mostrar. */}
+      {secciones.length ? (
+        <Outlet />
+      ) : (
+        <main className="main">
+          <Result
+            status="info"
+            title="Todavía no estás asignado a un boliche"
+            subTitle="El admin del boliche tiene que sumarte a su equipo para que puedas ver su información."
+            extra={<Button onClick={cerrarSesion}>Cerrar sesión</Button>}
+          />
+        </main>
+      )}
 
       {/* Barra inferior que solo se ve en teléfono. NavLink marca con "on" la sección activa. */}
       <nav className="mobile-nav">

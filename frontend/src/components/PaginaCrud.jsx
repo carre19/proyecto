@@ -20,11 +20,15 @@ import Topbar from "./Topbar.jsx";
 //   puedeCrear  -> (permisos) => bool; si es false no se muestra "Nuevo" (por defecto true)
 //   puedeEditar -> (permisos, item) => bool; si es false la fila no tiene editar ni eliminar (por defecto true)
 //   guardar   -> async (item | null, valores) para guardados especiales (ej. datos + roles); si no, crea/edita el recurso
-//   acciones  -> (item) => botones extra de la fila (ej. "Abrir evento")
+//   acciones  -> (item) => botones extra de la fila (ej. "Abrir boliche")
+//   camposEdicion -> campos del formulario al EDITAR, si son otros que al crear (ej. el equipo: al crear se piden los datos de la persona, al editar solo la comisión)
+//   sinEliminar   -> true si el recurso no se borra (se desactiva)
+//   pie           -> contenido extra que va debajo de la tabla (por ejemplo, los paneles que llegan en otras fases)
+//   embebida      -> true para usarla dentro de otra pantalla (una pestaña): sin buscador ni título, solo la tabla y el botón de crear
 // Ejemplo completo en pages/Clientes.jsx. Estados internos:
 //   busqueda -> texto del buscador | editando -> null, "nuevo" o el item que se edita
 export default function PaginaCrud({ config }) {
-  const { titulo, singular, femenino, api, id, columnas, campos, buscar, acciones } = config;
+  const { titulo, singular, femenino, api, id, columnas, campos, buscar, acciones, embebida, sinEliminar } = config;
   const permisos = usePermisos();
   const puedeCrear = config.puedeCrear?.(permisos) ?? true;
   const puedeEditar = (item) => config.puedeEditar?.(permisos, item) ?? true;
@@ -38,7 +42,7 @@ export default function PaginaCrud({ config }) {
   const visibles = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     if (!q) return items;
-    return items.filter((i) => buscar(i).toLowerCase().includes(q));
+    return items.filter((i) => (buscar?.(i) ?? "").toLowerCase().includes(q));
   }, [items, busqueda, buscar]);
 
   // Si el back falla al eliminar, se avisa con un mensaje flotante de antd.
@@ -70,6 +74,7 @@ export default function PaginaCrud({ config }) {
           <Tooltip title="Editar">
             <Button type="text" icon={<EditOutlined />} aria-label="Editar" onClick={() => setEditando(item)} />
           </Tooltip>
+          {!sinEliminar && (
           <Popconfirm
             title={`¿Eliminar este registro de ${titulo.toLowerCase()}?`}
             okText="Eliminar"
@@ -81,6 +86,7 @@ export default function PaginaCrud({ config }) {
               <Button type="text" danger icon={<DeleteOutlined />} aria-label="Eliminar" />
             </Tooltip>
           </Popconfirm>
+          )}
           </>
           )}
         </Space>
@@ -88,21 +94,25 @@ export default function PaginaCrud({ config }) {
     },
   ];
 
-  return (
-    <main className="main">
-      <Topbar busqueda={busqueda} onBusqueda={setBusqueda} placeholder={`Buscar ${titulo.toLowerCase()}…`} />
+  const Contenedor = embebida ? "div" : "main";
 
-      <div className="page-head">
-        <div>
-          <div className="eyebrow">{fechaLarga()}</div>
-          <h1>{titulo}</h1>
+  return (
+    <Contenedor className={embebida ? "crud-embebido" : "main"}>
+      {!embebida && <Topbar busqueda={busqueda} onBusqueda={setBusqueda} placeholder={`Buscar ${titulo.toLowerCase()}…`} />}
+
+      {!embebida && (
+        <div className="page-head">
+          <div>
+            <div className="eyebrow">{fechaLarga()}</div>
+            <h1>{titulo}</h1>
+          </div>
+          {puedeCrear && (
+            <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setEditando("nuevo")}>
+              {nuevo}
+            </Button>
+          )}
         </div>
-        {puedeCrear && (
-          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setEditando("nuevo")}>
-            {nuevo}
-          </Button>
-        )}
-      </div>
+      )}
 
       {error && (
         <Alert
@@ -122,9 +132,16 @@ export default function PaginaCrud({ config }) {
           <span className="muted">
             {cargando ? "Cargando…" : `${visibles.length} ${visibles.length === 1 ? "registro" : "registros"}`}
           </span>
-          <Button size="small" icon={<ReloadOutlined />} onClick={recargar}>
-            Actualizar
-          </Button>
+          <Space>
+            {embebida && puedeCrear && (
+              <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => setEditando("nuevo")}>
+                {nuevo}
+              </Button>
+            )}
+            <Button size="small" icon={<ReloadOutlined />} onClick={recargar}>
+              Actualizar
+            </Button>
+          </Space>
         </div>
         <Table
           rowKey={id}
@@ -144,10 +161,12 @@ export default function PaginaCrud({ config }) {
         />
       </div>
 
+      {config.pie}
+
       {editando && (
         <FormModal
           titulo={editando === "nuevo" ? nuevo : `Editar ${singular}`}
-          campos={campos}
+          campos={editando !== "nuevo" && config.camposEdicion ? config.camposEdicion : campos}
           item={editando === "nuevo" ? null : editando}
           onGuardar={async (valores) => {
             const item = editando === "nuevo" ? null : editando;
@@ -162,6 +181,6 @@ export default function PaginaCrud({ config }) {
           onCerrar={() => setEditando(null)}
         />
       )}
-    </main>
+    </Contenedor>
   );
 }

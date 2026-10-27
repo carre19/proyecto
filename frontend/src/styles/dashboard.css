@@ -400,3 +400,17 @@
   flex-direction: column;
   gap: 2px;
 }
+
+/* Tabla CRUD dentro de otra pantalla (una pestaña): sin márgenes propios. */
+.crud-embebido {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Paneles de la pantalla principal que llegan en otras fases. */
+.proximamente {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}

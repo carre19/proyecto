@@ -25,11 +25,11 @@ export default function useRecurso(api, nombreId) {
     recargar();
   }, [recargar]);
 
-  // Si se edita, se envía el registro completo mezclado con los cambios (los PUT del back
-  // reemplazan todos los campos). Lanza el error para que lo muestre el formulario.
+  // Si se edita, se envía solo lo que se completó en el formulario (los PUT del back son parciales).
+  // Lanza el error para que lo muestre el formulario.
   const guardar = async (item, valores) => {
     try {
-      if (item) await api.editar(item[nombreId], { ...item, ...valores });
+      if (item) await api.editar(item[nombreId], valores);
       else await api.crear(valores);
     } catch (e) {
       throw new Error(mensajeError(e, "No se pudo guardar"));
