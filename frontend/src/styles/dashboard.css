@@ -1,0 +1,402 @@
+/* Panel privado: sidebar, barra superior, tarjetas, calendario semanal y contenedor de tablas.
+   Los controles (menú, tabla, botones, etiquetas) son de Ant Design y se ajustan en antd.css.
+   Al final: navegación móvil (barra inferior) y ajustes responsive. */
+
+/* ---------- Panel ---------- */
+
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+}
+
+.side {
+  background: var(--side);
+  border-right: 1px solid var(--line);
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+}
+
+.side .logo {
+  padding: 0 8px;
+}
+
+/* Menú de Ant Design: sin fondo ni borde propios, se apoya en el cristal del sidebar. */
+.menu-lateral.ant-menu {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  border-inline-end: 0;
+}
+
+.menu-lateral .ant-menu-item {
+  height: 46px;
+  line-height: 46px;
+  font-weight: 500;
+}
+
+.me {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--panel);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+}
+
+.me .who {
+  min-width: 0;
+  flex: 1;
+}
+
+.me .who b {
+  display: block;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.me .who span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.main {
+  padding: 28px 36px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.eyebrow {
+  font: 500 12px var(--mono);
+  letter-spacing: .14em;
+  color: var(--muted);
+}
+
+.page-head h1 {
+  margin-top: 8px;
+  font: 700 36px var(--display);
+  letter-spacing: .02em;
+}
+
+.dash {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+}
+
+/* Las tarjetas son <Card> de Ant Design; su cristal está en antd.css. Acá solo el contenido interior. */
+.hero {
+  min-height: 220px;
+}
+
+.hero h2 {
+  color: var(--text);
+}
+
+.hero .ant-card-body {
+  height: 100%;
+  min-height: 220px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.hero-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-top .eyebrow {
+  color: var(--soft);
+  letter-spacing: .12em;
+}
+
+.hero h2 {
+  font: 700 clamp(28px, 3vw, 40px) var(--display);
+  letter-spacing: .02em;
+  overflow-wrap: anywhere;
+}
+
+.hero p {
+  font-size: 15px;
+  color: var(--soft);
+  margin-top: 8px;
+}
+
+.hero-foot {
+  font: 500 13px var(--mono);
+  color: var(--soft);
+}
+
+.week .ant-card-body {
+  padding: 8px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  text-align: center;
+}
+
+.week-grid.names {
+  font: 500 11px var(--mono);
+  color: var(--muted);
+}
+
+.week-grid.days {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.week-grid.days span {
+  padding: 10px 0;
+  border-radius: 10px;
+}
+
+.week-grid.days .past {
+  color: var(--faint);
+}
+
+.week-grid.days .today {
+  border: 1px solid rgba(var(--ink), .3);
+}
+
+.week-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.week-list div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.week-list em {
+  margin-left: auto;
+  font-style: normal;
+  color: var(--muted);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  display: inline-block;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.table-card {
+  border-radius: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+}
+
+.table-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.bar-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bar-name i {
+  width: 4px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--c);
+  flex: none;
+}
+
+/* ---------- Navegación móvil ---------- */
+
+.mobile-top,
+.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .shell {
+    grid-template-columns: 1fr;
+    padding-bottom: 84px;
+  }
+
+  .side {
+    display: none;
+  }
+
+  .mobile-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px 0;
+  }
+
+  .mobile-top .logo i {
+    width: 12px;
+    height: 12px;
+  }
+
+  .mobile-top .logo span {
+    font-size: 16px;
+  }
+
+  .mobile-top {
+    gap: 10px;
+  }
+
+  .mobile-top .logo {
+    margin-right: auto;
+  }
+
+  .main {
+    padding: 20px 20px 32px;
+    gap: 16px;
+  }
+
+  .topbar .role-pill {
+    display: none;
+  }
+
+  .page-head h1 {
+    font-size: 28px;
+  }
+
+  .dash {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    padding: 20px;
+  }
+
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    background: var(--side);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border-top: 1px solid var(--line);
+    padding: 10px 8px 14px;
+    font-size: 11px;
+    font-weight: 500;
+    overflow-x: auto;
+  }
+
+  .mobile-nav a {
+    flex: 1;
+    min-width: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    padding: 4px;
+  }
+
+  .mobile-nav .anticon {
+    font-size: 20px;
+  }
+
+  .mobile-nav a.on {
+    color: var(--text);
+  }
+
+  .mobile-nav a.on .anticon {
+    color: var(--primary);
+  }
+}
+
+/* ---------- Celular: cabecera de página y barra inferior ---------- */
+@media (max-width: 960px) {
+  /* El botón "Nuevo ..." baja debajo del título si no entra al lado, en vez de salirse de la pantalla. */
+  .page-head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .page-head > div {
+    min-width: 0;
+  }
+
+  .page-head h1 {
+    overflow-wrap: anywhere;
+  }
+
+  /* La barra inferior se desliza: el borde derecho se desvanece para que se note que hay más secciones. */
+  .mobile-nav {
+    -webkit-mask-image: linear-gradient(to right, #000 82%, transparent);
+    mask-image: linear-gradient(to right, #000 82%, transparent);
+    scroll-snap-type: x proximity;
+  }
+
+  .mobile-nav a {
+    scroll-snap-align: start;
+  }
+}
+
+/* Dato con su contacto debajo (ficha del evento): nombre arriba y teléfono / email en una línea aparte. */
+.dato-contacto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

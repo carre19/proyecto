@@ -1,0 +1,212 @@
+/* Ajustes de Ant Design para el estilo cristal (glassmorphism) de la app.
+   Los colores salen de utils/temaAnt.js; acá se agregan el desenfoque, las sombras y los detalles
+   que los tokens no cubren. Todo usa las variables de base.css, así funciona en los dos temas. */
+
+/* ---------- Tarjetas (Card): cristal ---------- */
+
+.ant-card {
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+}
+
+.ant-card .ant-card-head {
+  border-bottom: 0;
+  font-weight: 700;
+}
+
+/* ---------- Contenedor de tablas (.table-card) ---------- */
+
+.table-card .ant-table {
+  background: transparent;
+}
+
+.table-card .ant-table-thead > tr > th {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table-card .ant-table-tbody > tr > td {
+  color: var(--soft);
+  white-space: nowrap;
+}
+
+/* Primera columna: el nombre de la fila va destacado. */
+.table-card .ant-table-tbody > tr > td.col-principal,
+.pub-propuesta .ant-table-tbody > tr > td.col-principal {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.table-card .ant-pagination,
+.pub-propuesta .ant-pagination {
+  padding: 0 16px;
+}
+
+/* ---------- Ventanas (Modal): cristal ---------- */
+
+.ant-modal .ant-modal-content {
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+}
+
+.ant-modal .ant-modal-title {
+  font: 700 22px var(--display);
+}
+
+.ant-modal-mask {
+  background: var(--overlay);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* Botones de abajo del formulario. */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ---------- Menús desplegables y avisos ---------- */
+
+.ant-select-dropdown,
+.ant-picker-dropdown .ant-picker-panel-container,
+.ant-dropdown .ant-dropdown-menu,
+.ant-popover .ant-popover-inner,
+.ant-message .ant-message-notice-content {
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+}
+
+/* ---------- Campos de formulario ---------- */
+
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-picker,
+.ant-select .ant-select-content {
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Dentro de un campo con ícono el <input> no lleva su propio desenfoque: si no, se ve una franja de otro
+   color adentro del recuadro. */
+.ant-input-affix-wrapper > input.ant-input {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: transparent;
+}
+
+/* En formularios verticales la etiqueta va arriba del campo: que mida lo que su texto, no el alto de un
+   campo (antd le pone el alto del control y queda un hueco grande entre etiqueta y campo). */
+.ant-form-vertical .ant-form-item .ant-form-item-label > label {
+  height: auto;
+}
+
+.ant-form-vertical .ant-form-item .ant-form-item-label {
+  padding-bottom: 6px;
+}
+
+.ant-form-item .ant-form-item-label > label {
+  font-weight: 500;
+  color: var(--soft);
+}
+
+/* ---------- Botones ---------- */
+
+.ant-btn {
+  font-weight: 500;
+}
+
+.ant-btn-primary {
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(var(--ink), .12);
+}
+
+/* ---------- Segmented (pestañas de filtro y de acceso) ---------- */
+
+.ant-segmented {
+  border: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.ant-segmented .ant-segmented-item-label {
+  font-weight: 500;
+}
+
+/* ---------- FAQ (Collapse) ---------- */
+
+.faq .ant-collapse-item {
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.faq .ant-collapse-title {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.faq .ant-collapse-body p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--soft);
+}
+
+/* ---------- Etiquetas y avisos ---------- */
+
+/* Etiquetas de empresa y rol (arriba a la derecha): pastillas de vidrio con los colores del tema. */
+.role-pill.ant-tag {
+  margin: 0;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  white-space: nowrap;
+}
+
+/* La empresa va resaltada con el color principal del tema (dorado en claro, rojo en oscuro). */
+.role-pill--empresa.ant-tag {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 22%, var(--bg));
+}
+
+.ant-alert {
+  border-radius: 12px;
+}
+
+/* El texto de ayuda de los formularios hereda el color suave del tema. */
+.lead {
+  color: var(--muted);
+}
+
+/* ---------- Tipografía griega: Cinzel en botones, menús, pestañas y encabezados de tabla ---------- */
+
+.ant-btn,
+.ant-menu-item,
+.ant-segmented-item-label,
+.ant-table-thead > tr > th,
+.ant-modal .ant-modal-title,
+.ant-card-head-title,
+.ant-tag {
+  font-family: var(--display);
+  letter-spacing: .04em;
+}
+
+.ant-btn,
+.ant-menu-item,
+.ant-segmented-item-label {
+  font-weight: 600;
+}

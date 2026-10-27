@@ -1,0 +1,165 @@
+/* Pantalla de entrada (splash). Está escrita en index.html, así que aparece antes de que cargue React.
+   main.jsx le agrega la clase "fuera" cuando pasó el tiempo mínimo y la elimina del DOM.
+   Toma el tema (claro u oscuro) del atributo data-theme que pone index.html. */
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  overflow: hidden;
+  background:
+    radial-gradient(60vmax 60vmax at 12% 8%, var(--blob-1), transparent 60%),
+    radial-gradient(55vmax 55vmax at 88% 18%, var(--blob-2), transparent 60%),
+    radial-gradient(60vmax 60vmax at 70% 95%, var(--blob-3), transparent 60%),
+    var(--bg);
+  transition: opacity .8s ease, transform .8s ease, visibility .8s;
+}
+
+:root[data-theme="light"] .splash {
+  background:
+    var(--marmol) center / cover,
+    var(--bg);
+}
+
+.splash.fuera {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.04);
+}
+
+/* ---------- Capas de fondo ---------- */
+.splash::before,
+.splash::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+
+/* Arriba a la derecha el adorno del tema (sol o estrella de Vergina) y, detrás del logo, las columnas tenues. */
+.splash::before {
+  top: 0;
+  right: 0;
+  width: min(44vw, 600px);
+  aspect-ratio: 620 / 420;
+  background-image: var(--splash-fondo, none);
+  background-size: contain;
+  background-position: top right;
+  animation: splash-aparecer calc(1.4s * var(--ritmo, 1)) ease both;
+}
+
+.splash::after {
+  top: 50%;
+  left: 50%;
+  width: min(80vw, 640px);
+  aspect-ratio: 1;
+  background-image: var(--arte, none);
+  background-size: contain;
+  background-position: center;
+  opacity: .28;
+  transform: translate(-50%, -50%);
+  animation: splash-columnas calc(1.8s * var(--ritmo, 1)) cubic-bezier(.2, .7, .2, 1) both;
+}
+
+/* ---------- Marca ---------- */
+.splash-marca {
+  display: flex;
+  font: 700 clamp(56px, 13vw, 150px) / .9 var(--display);
+  letter-spacing: .02em;
+  color: var(--text);
+}
+
+.splash-marca span {
+  display: inline-block;
+  animation: splash-subir calc(.8s * var(--ritmo, 1)) cubic-bezier(.2, .7, .2, 1) both;
+}
+
+.splash-marca span:nth-child(1) { animation-delay: calc(.25s * var(--ritmo, 1)); }
+.splash-marca span:nth-child(2) { animation-delay: calc(.33s * var(--ritmo, 1)); }
+.splash-marca span:nth-child(3) { animation-delay: calc(.41s * var(--ritmo, 1)); }
+.splash-marca span:nth-child(4) { animation-delay: calc(.49s * var(--ritmo, 1)); color: var(--pink); }
+.splash-marca span:nth-child(5) { animation-delay: calc(.57s * var(--ritmo, 1)); color: var(--pink); }
+.splash-marca span:nth-child(6) { animation-delay: calc(.65s * var(--ritmo, 1)); color: var(--pink); }
+
+.splash-sub {
+  font: 500 clamp(11px, 1.6vw, 14px) var(--sans);
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: var(--soft);
+  animation: splash-aparecer calc(1s * var(--ritmo, 1)) ease calc(.9s * var(--ritmo, 1)) both;
+}
+
+.splash-barra {
+  width: min(260px, 60vw);
+  height: 3px;
+  margin-top: 10px;
+  border-radius: 3px;
+  background: rgba(var(--ink), .18);
+  overflow: hidden;
+  animation: splash-aparecer calc(.6s * var(--ritmo, 1)) ease calc(1s * var(--ritmo, 1)) both;
+}
+
+.splash-barra i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: 3px;
+  background: var(--primary);
+  transform-origin: left;
+  animation: splash-cargar calc(1.9s * var(--ritmo, 1)) cubic-bezier(.4, 0, .2, 1) calc(1s * var(--ritmo, 1)) both;
+}
+
+/* Versión con Ant Design (components/Splash.jsx): la barra de progreso va en un contenedor centrado. */
+.splash-progreso {
+  width: min(260px, 60vw);
+  margin: 10px auto 0;
+  animation: splash-aparecer calc(.6s * var(--ritmo, 1)) ease calc(1s * var(--ritmo, 1)) both;
+}
+
+.splash-progreso .ant-progress {
+  display: block;
+  margin: 0;
+  line-height: 0;
+}
+
+.splash-progreso .ant-progress-rail,
+.splash-progreso .ant-progress-bg {
+  border-radius: 6px;
+}
+
+/* ---------- Animaciones ---------- */
+/* --ritmo (1 = normal, .6 = rápido) lo pone utils/splash.js al volver a mostrarlo por un cambio de modo. */
+@keyframes splash-aparecer {
+  from { opacity: 0; }
+}
+
+@keyframes splash-columnas {
+  from { opacity: 0; transform: translate(-50%, -46%) scale(.94); }
+}
+
+@keyframes splash-subir {
+  from { opacity: 0; transform: translateY(60%); }
+}
+
+@keyframes splash-cargar {
+  from { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash,
+  .splash::before,
+  .splash::after,
+  .splash-marca span,
+  .splash-sub,
+  .splash-barra,
+  .splash-barra i,
+  .splash-progreso {
+    animation: none;
+    transition: none;
+  }
+}

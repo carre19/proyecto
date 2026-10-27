@@ -1,0 +1,103 @@
+/* Animaciones y transiciones (aparición al hacer scroll, cambio login/registro, botón "volver").
+   Incluye prefers-reduced-motion para quien desactiva animaciones en su sistema. */
+
+/* ---------- Animaciones ---------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1);
+}
+
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+.reveal.d1 {
+  transition-delay: .08s;
+}
+
+.reveal.d2 {
+  transition-delay: .16s;
+}
+
+.reveal.d3 {
+  transition-delay: .24s;
+}
+
+.land-title {
+  animation: rise .9s cubic-bezier(.2, .7, .2, 1) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes swap {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes swap-art {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.swap {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation: swap .4s cubic-bezier(.2, .7, .2, 1) both;
+}
+
+.auth-art h2 {
+  animation: swap-art .5s cubic-bezier(.2, .7, .2, 1) both;
+}
+
+.art-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .land-title,
+  .swap,
+  .auth-art h2 {
+    animation: none;
+  }
+}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0A1510" />
+    <script>
+      try {
+        var t = localStorage.getItem("noctis-tema");
+        if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+    <title>Noctis · Gestor de fiestas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Philosopher:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Splash: se ve apenas abre la página; main.jsx lo quita al terminar (estilos en styles/splash.css) -->
+    <div class="splash" id="splash" aria-hidden="true">
+      <div class="splash-marca"><span>N</span><span>O</span><span>C</span><span>T</span><span>I</span><span>S</span></div>
+      <p class="splash-sub">Gestor de fiestas</p>
+      <div class="splash-barra"><i></i></div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

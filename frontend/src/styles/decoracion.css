@@ -1,0 +1,281 @@
+/* Decoración que cambia con el tema (los archivos están en src/assets/):
+     modo claro  -> griego/: columnas, greca, sol, luna y la foto de El Pensador (mármol y estilo astrológico)
+     modo oscuro -> ares/: columnas y greca rojas, estrella de Vergina, escudo con lanzas y la estatua de Ares
+   Cada tema define sus imágenes en base.css con estas variables:
+     --arte      columnas grandes (hero de la landing y panel izquierdo del login)
+     --cenefa    greca que se repite (sidebar, cabecera del panel, separadores)
+     --follaje   adorno fijo arriba a la derecha (claro: sol | oscuro: estrella de Vergina)
+     --follaje-2 adorno fijo abajo a la izquierda (claro: luna | oscuro: escudo con lanzas)
+     --figura    estatua de fondo abajo a la derecha (claro: El Pensador | oscuro: Ares)
+   Acá solo se decide dónde se ponen; para cambiar un dibujo se cambia la variable. */
+
+/* ---------- Capas fijas de fondo (detrás de todo el contenido) ----------
+   body::before -> --follaje | body::after -> --follaje-2 | html::after -> --figura (más atrás, z-index -2) */
+body::before,
+body::after,
+html::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+
+body::before {
+  z-index: -1;
+  background-image: var(--follaje, none);
+}
+
+body::after {
+  z-index: -1;
+  background-image: var(--follaje-2, none);
+}
+
+html::after {
+  z-index: -2;
+  background-image: var(--figura, none);
+}
+
+/* --- Modo oscuro: estrella de Vergina, escudo con lanzas y la estatua de Ares --- */
+:root:not([data-theme="light"]) body::before {
+  top: 0;
+  right: 0;
+  width: min(26vw, 340px);
+  aspect-ratio: 620 / 420;
+  background-size: contain;
+  background-position: top right;
+  opacity: .8;
+}
+
+:root:not([data-theme="light"]) body::after {
+  bottom: 0;
+  left: 0;
+  width: min(24vw, 320px);
+  aspect-ratio: 620 / 420;
+  background-size: contain;
+  background-position: bottom left;
+  opacity: .24;
+}
+
+/* Foto: estatua de Marte (Ares) de Neustrelitz, dominio público, vía Wikimedia Commons.
+   Está recortada del fondo y teñida de rojo; un halo rojo la separa del negro. */
+:root:not([data-theme="light"])::after {
+  right: 1vw;
+  bottom: 0;
+  height: min(84vh, 900px);
+  aspect-ratio: 620 / 1679;
+  background-size: contain;
+  background-position: center bottom;
+  opacity: .55;
+  filter: blur(.5px) drop-shadow(0 0 34px rgba(214, 48, 63, .5));
+}
+
+/* --- Modo claro: sol, luna y El Pensador --- */
+:root[data-theme="light"] body::before {
+  top: 0;
+  right: 0;
+  width: min(26vw, 340px);
+  aspect-ratio: 620 / 420;
+  background-size: contain;
+  background-position: top right;
+  opacity: .7;
+}
+
+/* Los controles que quedan sobre el sol, la luna o las hojas llevan un fondo de vidrio para leerse bien. */
+.role-pill,
+.boton-tema,
+.boton-enlace,
+.pub-cabecera .logo {
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.boton-enlace,
+.pub-cabecera .logo {
+  border-radius: 999px;
+}
+
+.pub-cabecera .logo {
+  padding: 6px 14px;
+}
+
+/* Texto de la pantalla "sin rol": va sobre una tarjeta para no perderse sobre la escultura. */
+.sin-rol .ant-result {
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-radius: 20px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+:root[data-theme="light"] body::after {
+  bottom: 0;
+  left: 0;
+  width: min(40vw, 540px);
+  aspect-ratio: 620 / 420;
+  background-size: contain;
+  background-position: bottom left;
+  opacity: .7;
+}
+
+/* Foto: "El Pensador" de Rodin, The Metropolitan Museum of Art (Open Access, CC0), vía Wikimedia Commons.
+   Está recortada del fondo y teñida en tonos hueso para que se funda con el mármol. */
+:root[data-theme="light"]::after {
+  right: 2vw;
+  bottom: 0;
+  width: min(30vw, 460px);
+  aspect-ratio: 640 / 994;
+  background-size: contain;
+  background-position: center bottom;
+  opacity: .42;
+  filter: blur(.7px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 80%, transparent 100%);
+}
+
+/* ---------- Columnas: rellenan el espacio vacío de la derecha / izquierda ---------- */
+.land-hero {
+  position: relative;
+}
+
+.land-hero::after {
+  content: "";
+  position: absolute;
+  right: 56px;
+  top: 40px;
+  width: min(40vw, 540px);
+  aspect-ratio: 1;
+  background: var(--arte) center / contain no-repeat;
+  opacity: .9;
+  pointer-events: none;
+}
+
+.land-title,
+.land-sub {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-art {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-art::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(90%, 560px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -58%);
+  background: var(--arte) center / contain no-repeat;
+  opacity: .8;
+  pointer-events: none;
+}
+
+.auth-art > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Greca: cenefa decorativa ---------- */
+.lineup::before,
+.main::before,
+.land-foot::before,
+.pub::before {
+  content: "";
+  display: block;
+  height: 20px;
+  background: var(--cenefa) left center / auto 20px repeat-x;
+  opacity: .55;
+}
+
+.lineup::before {
+  margin-bottom: 32px;
+}
+
+.land-foot {
+  flex-wrap: wrap;
+}
+
+.land-foot::before {
+  flex: 0 0 100%;
+  margin-bottom: 20px;
+}
+
+.side::before {
+  content: "";
+  display: block;
+  height: 20px;
+  margin: -8px 0 0;
+  background: var(--cenefa) left center / auto 20px repeat-x;
+  opacity: .55;
+}
+
+@media (max-width: 960px) {
+  :root[data-theme="light"]::after {
+    width: 54vw;
+    opacity: .26;
+  }
+
+  :root[data-theme="light"] body::before {
+    width: 72vw;
+    opacity: .55;
+  }
+
+  :root[data-theme="light"] body::after {
+    width: 52vw;
+    opacity: .4;
+  }
+
+  :root:not([data-theme="light"]) body::before {
+    width: 46vw;
+    opacity: .5;
+  }
+
+  :root:not([data-theme="light"]) body::after {
+    width: 44vw;
+    opacity: .2;
+  }
+
+  :root:not([data-theme="light"])::after {
+    height: 72vh;
+    right: -8vw;
+    opacity: .34;
+  }
+
+  .land-hero::after {
+    right: -8px;
+    top: auto;
+    bottom: 16px;
+    width: 64vw;
+    opacity: .28;
+  }
+
+  .auth-art {
+    min-height: 260px;
+  }
+
+  .auth-art::before {
+    width: 60%;
+    top: 62%;
+    transform: translate(-50%, -50%);
+    opacity: .3;
+  }
+
+  .main::before {
+    height: 16px;
+    background-size: auto 16px;
+  }
+}
+
+/* Modo oscuro: las columnas de la landing y del login se ven tenues para que Ares no quede tapado. */
+:root:not([data-theme="light"]) .land-hero::after {
+  opacity: .4;
+}
+
+:root:not([data-theme="light"]) .auth-art::before {
+  opacity: .55;
+}

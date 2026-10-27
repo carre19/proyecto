@@ -1,0 +1,16 @@
+/* Punto de entrada de los estilos: solo importa los demás archivos.
+   El orden importa: los últimos pisan a los primeros
+   (antd.css, tipografia.css, decoracion.css y lineas.css ajustan lo que definen los archivos anteriores). */
+@import "./base.css";
+@import "./components.css";
+@import "./landing.css";
+@import "./auth.css";
+@import "./animations.css";
+@import "./dashboard.css";
+@import "./public.css";
+@import "./evento.css";
+@import "./antd.css";
+@import "./tipografia.css";
+@import "./decoracion.css";
+@import "./lineas.css";
+@import "./splash.css";

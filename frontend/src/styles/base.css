@@ -1,0 +1,167 @@
+/* Base global.
+   - :root define las variables de color (modo oscuro) y [data-theme="light"] las del modo claro (mármol).
+     Para cambiar la paleta se toca solo acá; el resto del CSS usa var(--nombre).
+   - Reset, tipografía griega (Cinzel + Philosopher) y fondo de la página. */
+
+/* Modo oscuro: Ares, dios de la guerra. Negro y rojo (más rojo que negro), con estilo griego:
+   columnas, grecas, estrella de Vergina, escudo con lanzas y la estatua de Marte/Ares de fondo. */
+:root {
+  /* Tipografía de estilo griego (igual en los dos temas):
+     --display -> Cinzel, letras de inscripción en piedra: títulos, marca, botones y etiquetas
+     --sans    -> Philosopher, humanista y legible: texto corrido */
+  --display: "Cinzel", "Times New Roman", serif;
+  --sans: "Philosopher", Georgia, serif;
+  --mono: var(--display); /* las etiquetas pequeñas (fechas, encabezados de tabla) también van en Cinzel */
+  --glass-blur: blur(16px) saturate(130%);
+  color-scheme: dark;
+
+  --bg: #0d0506;
+  --ink: 255, 226, 222;
+  --side: rgba(8, 2, 3, 0.55);
+  --panel: rgba(20, 5, 8, 0.62);
+  --raised: rgba(120, 14, 26, 0.34);
+  --text: #fff4f1;
+  --soft: #f0dcd8;
+  --muted: #d6bcb8;
+  --faint: #b09692;
+  --line: rgba(224, 72, 90, 0.30);
+  --line-strong: rgba(224, 72, 90, 0.50);
+  --glass-hi: rgba(255, 110, 120, 0.16);
+  --glass-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 var(--glass-hi);
+  --modal-bg: rgba(18, 5, 8, 0.9);
+  --overlay: rgba(6, 1, 2, 0.68);
+
+  --primary: #d6303f;
+  --on-primary: #fff3f1;
+
+  --pink: #e8475a;   /* rojo vivo: acentos y títulos */
+  --amber: #d4a24a;  /* bronce dorado */
+  --lime: #8fa86a;   /* verde oliva apagado (estados "ok") */
+  --cyan: #7ba2b4;
+  --violet: #b08aa4;
+  --red: #ff6b7a;
+  --red-soft: #ffa3ac;
+
+  --blob-1: rgba(168, 22, 36, 0.62);
+  --blob-2: rgba(120, 10, 26, 0.5);
+  --blob-3: rgba(70, 4, 14, 0.7);
+
+  --arte: url("../assets/ares/columnas-rojas.svg");     /* columnas: hero de la landing y panel del login */
+  --cenefa: url("../assets/ares/greca-roja.svg");       /* greca que se repite */
+  --follaje: url("../assets/ares/vergina.svg");         /* estrella de Vergina, arriba a la derecha */
+  --follaje-2: url("../assets/ares/escudo.svg");        /* escudo con lanzas, abajo a la izquierda */
+  --splash-fondo: url("../assets/ares/vergina.svg");    /* el splash usa la estrella */
+  --figura: url("../assets/ares/ares.webp");            /* estatua de Ares, abajo a la derecha */
+}
+
+/* Modo claro: mármol hueso con vetas amarillentas y grises, acentos mostaza. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #ebe5d3;
+  --ink: 60, 48, 20;
+  --side: rgba(255, 252, 240, 0.6);
+  --panel: rgba(255, 252, 240, 0.6);
+  --raised: rgba(255, 253, 245, 0.9);
+  --text: #2a261b;
+  --soft: #3d392b;
+  --muted: #5a533f;
+  --faint: #7d755d;
+  --line: rgba(60, 48, 20, 0.14);
+  --line-strong: rgba(60, 48, 20, 0.26);
+  --glass-hi: rgba(255, 255, 250, 0.95);
+  --glass-shadow: 0 8px 28px rgba(90, 70, 20, 0.14), inset 0 1px 0 var(--glass-hi);
+  --modal-bg: rgba(252, 249, 238, 0.88);
+  --overlay: rgba(60, 48, 20, 0.35);
+
+  --primary: #e3b324;
+  --on-primary: #2a261b;
+
+  --pink: #a87a0c;
+  --amber: #b0701a;
+  --lime: #6b7a2a;
+  --cyan: #5d6f78;
+  --violet: #7d7058;
+  --red: #b5472f;
+  --red-soft: #b5472f;
+
+  --blob-1: transparent;
+  --blob-2: transparent;
+  --blob-3: transparent;
+
+  --arte: url("../assets/griego/columnas.svg");
+  --cenefa: url("../assets/griego/greca.svg");
+  --follaje: url("../assets/griego/sol.svg");   /* arriba a la derecha */
+  --follaje-2: url("../assets/griego/luna.svg"); /* abajo a la izquierda */
+  --figura: url("../assets/griego/pensador.webp"); /* El Pensador, abajo a la derecha */
+  --splash-fondo: url("../assets/griego/sol.svg");     /* el splash claro usa el sol */
+  --marmol: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='1800' height='1800'><filter id='m' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='turbulence' baseFrequency='0.0022 0.0042' numOctaves='4' seed='11' result='t'/><feColorMatrix in='t' type='matrix' values='0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 0 1'/><feComponentTransfer><feFuncR type='table' tableValues='0.72 0.85 0.94 0.96 0.965'/><feFuncG type='table' tableValues='0.69 0.82 0.92 0.945 0.95'/><feFuncB type='table' tableValues='0.58 0.72 0.83 0.87 0.88'/></feComponentTransfer></filter><rect width='1800' height='1800' filter='url(%23m)'/></svg>");
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(60vmax 60vmax at 12% 8%, var(--blob-1), transparent 60%),
+    radial-gradient(55vmax 55vmax at 88% 18%, var(--blob-2), transparent 60%),
+    radial-gradient(60vmax 60vmax at 70% 95%, var(--blob-3), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--sans);
+  font-weight: 500; /* mismo grosor para párrafos, subtítulos y etiquetas */
+  -webkit-font-smoothing: antialiased;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: inherit;
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.display {
+  font-family: var(--display);
+}
+
+:root[data-theme="light"] body {
+  background:
+    var(--marmol) center / cover fixed,
+    var(--bg);
+}

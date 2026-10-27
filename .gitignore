@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (credenciales). Solo se sube .env.example
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build / cobertura
+dist/
+build/
+coverage/
+
+# Configuración local de Claude Code
+.claude/settings.local.json
+
+# Editor y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

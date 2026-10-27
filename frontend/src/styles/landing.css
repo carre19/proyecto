@@ -1,0 +1,276 @@
+/* Landing pública (/): barra superior, título, lista de funciones, pasos y FAQ.
+   Al final tiene su parte responsive (pantallas de hasta 960px). */
+
+/* ---------- Landing ---------- */
+
+.landing {
+  overflow-x: clip;
+}
+
+.land-hero {
+  padding: 8px 56px 48px;
+}
+
+.landing section[id] {
+  scroll-margin-top: 64px;
+}
+
+.land-nav {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: 20px 56px;
+  transition: background .3s, padding .3s, border-color .3s, backdrop-filter .3s;
+  border-bottom: 1px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  font: 500 12px var(--mono);
+  letter-spacing: .12em;
+  color: var(--soft);
+}
+
+.land-nav.scrolled {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  border-bottom-color: var(--line);
+  background: rgba(var(--ink), 0.07);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+/* La marca queda sobre el follaje del modo oscuro: un halo del color del fondo la mantiene legible. */
+.land-nav > span {
+  text-shadow: 0 0 10px var(--bg), 0 0 4px var(--bg);
+}
+
+.land-nav nav {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.land-title {
+  font: 700 clamp(96px, 23.5vw, 300px)/.82 var(--display);
+  letter-spacing: .02em;
+  margin-top: 64px;
+}
+
+.land-title span {
+  color: var(--pink);
+}
+
+.land-sub {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 40px;
+  margin-top: 56px;
+  padding-top: 28px;
+  border-top: 2px solid var(--text);
+  align-items: end;
+}
+
+.land-sub p {
+  font: 700 26px/1.3 var(--display);
+  text-wrap: balance;
+}
+
+.land-sub ul {
+  list-style: none;
+  font: 500 13px/1.7 var(--mono);
+  color: var(--soft);
+}
+
+.land-sub .end {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.lineup {
+  padding: 64px 56px;
+}
+
+.lineup-head {
+  display: flex;
+  justify-content: space-between;
+  font: 500 12px var(--mono);
+  letter-spacing: .16em;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.lineup-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+  padding: 28px 0;
+  border-top: 1px solid var(--line-strong);
+}
+
+.lineup-row:last-child {
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.lineup-row b {
+  font: 700 clamp(36px, 5vw, 64px) var(--display);
+  letter-spacing: .02em;
+}
+
+.lineup-row span {
+  font-size: 16px;
+  color: var(--soft);
+  max-width: 380px;
+  text-align: right;
+}
+
+.steps {
+  padding: 0 56px 72px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+}
+
+/* Cada paso va centrado: número, título y texto. */
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+/* El número ya no es solo contorno: va relleno con el color del paso para que se lea bien. */
+.step .n {
+  font: 700 120px/1 var(--display);
+  color: var(--c);
+}
+
+.step h3 {
+  font: 700 20px var(--display);
+}
+
+.step p {
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 320px;
+  color: var(--soft);
+}
+
+.faq {
+  padding: 72px 56px;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 56px;
+  background: rgba(var(--ink), 0.08);
+  color: var(--text);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.faq h2 {
+  font: 700 56px/1 var(--display);
+  letter-spacing: .02em;
+}
+
+.land-foot {
+  padding: 28px 56px;
+  font: 500 12px var(--mono);
+  letter-spacing: .12em;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+@media (max-width: 960px) {
+  .land-nav {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .land-hero,
+  .lineup,
+  .steps,
+  .faq,
+  .land-foot {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  /* En pantallas chicas solo quedan el botón de tema y "Ingresar" en la barra. */
+  .land-nav nav .ant-btn:not(.ant-btn-primary):not(.boton-tema) {
+    display: none;
+  }
+
+  .land-sub {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .land-sub .end {
+    justify-content: flex-start;
+  }
+
+  .land-sub p {
+    font-size: 22px;
+  }
+
+  .land-title {
+    margin-top: 40px;
+  }
+
+  .lineup {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+
+  .lineup-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .lineup-row span {
+    text-align: left;
+  }
+
+  .steps {
+    grid-template-columns: 1fr;
+    padding-bottom: 48px;
+  }
+
+  .step .n {
+    font-size: 80px;
+  }
+
+  .faq {
+    grid-template-columns: 1fr;
+    padding-top: 48px;
+    padding-bottom: 48px;
+    gap: 24px;
+  }
+
+  .faq h2 {
+    font-size: 40px;
+  }
+}
+
+/* Teléfonos: la marca ocupa su propia línea y los botones quedan debajo. */
+@media (max-width: 600px) {
+  .land-nav {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .land-nav > span {
+    flex: 1 0 100%;
+  }
+
+  .land-nav nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

@@ -1,0 +1,60 @@
+/* Página pública del evento (/evento/:token) que ve el cliente.
+   Usa tarjetas, tabla y avisos de Ant Design; acá solo la estructura y los textos grandes. */
+
+.pub {
+  min-height: 100vh;
+  padding: 32px 48px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.pub-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.pub-cargando {
+  display: flex;
+  justify-content: center;
+  padding: 80px 0;
+}
+
+.pub-cuerpo {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.pub h1 {
+  font: 700 clamp(32px, 5vw, 56px)/1.05 var(--display);
+  letter-spacing: .02em;
+}
+
+.pub-propuesta .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.pub-total {
+  font: 700 22px var(--display);
+}
+
+.pub-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .pub {
+    padding: 20px 18px 32px;
+    gap: 28px;
+  }
+}

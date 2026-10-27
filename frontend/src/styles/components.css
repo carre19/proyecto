@@ -1,0 +1,35 @@
+/* Piezas propias que se usan en toda la app: logo y botón de tema.
+   Botones, formularios, tablas, etiquetas y ventanas son de Ant Design (ver antd.css y utils/temaAnt.js). */
+
+/* ---------- Logo ---------- */
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--pink);
+  display: block;
+}
+
+.logo span {
+  font: 700 18px var(--display);
+  letter-spacing: .08em;
+}
+
+/* ---------- Botón de cambio de tema ---------- */
+
+.boton-tema {
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+/* En el sidebar baja hasta quedar pegado al bloque del usuario. */
+.boton-tema--side {
+  margin-top: auto;
+}
