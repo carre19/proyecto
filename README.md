@@ -2,7 +2,7 @@
 
 Fuente de esta documentación: la página de Notion **"Proyecto nuestro"** (6 de octubre de 2026, @Gianluca). Todo lo que figura en la sección 1 es lo que dice esa página; lo que decidimos nosotros al implementarlo está en la sección 2 y lo que sigue sin definir, en la sección 4.
 
-- **Estado actual:** fase 1 en marcha (ver "Plan de trabajo"). El front se adapta a la plataforma pero **conserva su estilo actual**.
+- **Estado actual:** **fase 1 terminada** (base de datos, API y front de los 5 roles); la fase 2 (entradas y QR) es la siguiente. El front **conserva su estilo actual**.
 - **Base de datos:** PostgreSQL local administrada con pgAdmin 4 (ver "Puesta en marcha").
 - **Tecnología:** React + Vite en el front; Node.js + Express + PostgreSQL en el back; un VPS para correr todo.
 
@@ -238,7 +238,7 @@ Estas decisiones no están en la página de Notion: las tomamos para poder avanz
 | Fase | Contenido | Estado |
 |---|---|---|
 | **0** | Documentación en este README, copia del proyecto con PostgreSQL local | ✅ Hecha |
-| **1** | Esquema multi-boliche; los 5 roles con su login; **panel del superadmin** (boliches y sus admins, usuarios); **panel del admin** (sus boliches, equipo y eventos de cada noche); **panel del manager** (su equipo y eventos); **página pública del boliche**; pruebas de que cada local ve únicamente lo suyo. Todo con el estilo actual del front | 🔨 Base de datos y API terminadas y probadas; **falta el front** |
+| **1** | Esquema multi-boliche; los 5 roles con su login; **panel del superadmin** (boliches y sus admins, usuarios); **panel del admin** (sus boliches, equipo y eventos de cada noche); **panel del manager** (su equipo y eventos); **página pública del boliche**; pruebas de que cada local ve únicamente lo suyo. Todo con el estilo actual del front | ✅ Terminada: base de datos, API y front, probados |
 | **2** | Entradas: tandas, VIP, precios virtual y de puerta, capacidad; compra con nombre, apellido y DNI; QR de un solo uso y control en puerta | ⏳ |
 | **3** | Pagos: confirmación automática de la transferencia, avisos por WhatsApp y Gmail, comisión de la plataforma (6 %) | ⏳ Depende de definiciones |
 | **4** | RRPP: alta y asignación, talonarios con link propio, listas de invitados, comisión, rankings y resultados | ⏳ |
@@ -303,7 +303,7 @@ Para crear un superadmin real (sin los datos de prueba): `npm run crear-superadm
 
 # 6. Estado de avance
 
-Se actualiza con cada cambio importante. Última actualización: fase 1, base de datos y API.
+Se actualiza con cada cambio importante. Última actualización: fase 1 terminada (base de datos, API y front).
 
 ## 6.1 Lo que está hecho
 
@@ -321,16 +321,22 @@ Se actualiza con cada cambio importante. Última actualización: fase 1, base de
 - Parte pública: boliches activos y sus próximos eventos, sin ningún dato interno (cobro, equipo, etc.).
 - **82 pruebas de punta a punta** (`pruebas/api_plataforma.py`), incluidas las de aislamiento entre boliches y de permisos de cada rol. Todas pasan.
 
+**Front** (`frontend/`, con el estilo de siempre: tipografía griega, mármol y modo oscuro de Ares)
+- Landing de la plataforma, login y registro de clientes (nombre, apellido, DNI y teléfono opcionales).
+- **Menú y pantalla de inicio según el rol:** superadmin y admin a sus boliches, manager y RRPP directo a su boliche, cliente a la lista pública.
+- **Panel del superadmin:** boliches (crea cada uno junto con su admin), usuarios (alta de admins, activar y desactivar cuentas) y los admins de cada boliche.
+- **Panel del admin:** sus boliches, y en cada uno los eventos, el equipo de RRPP (alta, comisión y manager) y los datos del local con las redes.
+- **Panel del manager:** su boliche con los eventos que crea y el equipo que asigna; **panel del RRPP:** su boliche en modo consulta.
+- **Parte pública:** `/explorar` con los boliches activos y `/b/:subdominio` con datos, ubicación, redes y próximos eventos.
+- Los bloques que llegan en otras fases (ingresos y gastos, ranking de RRPP, cobros, entradas) aparecen marcados como "disponible en la fase N".
+- Se quitaron las pantallas del sistema anterior. Probado en un navegador real con las cuentas demo, en los dos modos de color y en celular: alta de un evento y de un RRPP desde la pantalla, registro de un cliente y las vistas de cada rol.
+
 ## 6.2 Lo que falta de la fase 1
 
-- [ ] **Front:** adaptar las pantallas al sistema nuevo, manteniendo el estilo actual (tipografía griega, mármol, modo oscuro de Ares):
-  - login y registro de clientes;
-  - panel del superadmin (boliches, sus admins y usuarios);
-  - panel del admin (sus boliches, equipo y eventos);
-  - panel del manager (su equipo y eventos) y panel mínimo del RRPP;
-  - lista de boliches y página pública de cada boliche (`/b/:subdominio`).
-- [ ] Quitar del front las pantallas del sistema anterior (eventos de una organizadora, propuestas, tareas, etc.).
-- [ ] Probar el front de punta a punta en un navegador, en los dos modos de color y en celular.
+Nada obligatorio. Mejoras menores anotadas:
+- [ ] La lista de boliches del superadmin queda ancha en pantallas chicas (se desplaza hacia el costado).
+- [ ] El manager ve el bloque "próximamente" antes que sus eventos; conviene bajarlo cuando haya datos reales.
+- [ ] Aplicar Space Grotesk + glassmorphism de Notion, si el equipo lo pide más adelante (hoy se conserva el estilo actual).
 
 ## 6.3 Lo que falta de las fases siguientes
 
@@ -390,4 +396,8 @@ Qué se hizo y cuándo, en orden. Se agrega una línea por cada cambio important
 | 2026-10-27 | **API:** autenticación de los 5 roles, boliches y sus admins, equipo de RRPP con comisión, eventos y parte pública; un único middleware decide el acceso a cada boliche |
 | 2026-10-27 | **Pruebas:** 82 comprobaciones de punta a punta (aislamiento entre boliches y permisos de cada rol), todas pasan. Se encontró y corrigió un error al crear eventos (`artistas` como lista) |
 | 2026-10-27 | Script para crear un superadmin real, cuentas demo documentadas y referencia de la API |
-| *Próximo* | Adaptar el front a la plataforma manteniendo su estilo (ver 6.2) |
+| 2026-10-27 | **Front:** se quitan las pantallas del sistema anterior y se arma la base: sesión con los 5 roles, menú por rol, acceso, landing, boliches y usuarios |
+| 2026-10-27 | **Front:** ficha del boliche con eventos, equipo de RRPP y datos del local (el superadmin suma y quita admins) |
+| 2026-10-27 | **Front:** parte pública (`/explorar` y `/b/:subdominio`); el cliente se registra y entra a la lista de boliches |
+| 2026-10-27 | README del front reescrito para la plataforma; estado de la fase 1: terminada |
+| *Próximo* | **Fase 2:** tandas de entradas y VIP, precios virtual y de puerta, compra con nombre, apellido y DNI, y QR de un solo uso |
