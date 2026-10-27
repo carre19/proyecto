@@ -61,3 +61,50 @@ export const listaDeIds = (valor, campo) => {
 
     return {ids};
 };
+
+// ---------- Usuarios y datos comunes de la plataforma ----------
+
+export const PASSWORD_MINIMA = 8;
+export const REGEX_DNI = /^\d{7,9}$/;
+
+// Normaliza un email: minúsculas y sin espacios.
+export const normalizarEmail = (email) => String(email ?? "").trim().toLowerCase();
+
+// Valida los datos de una persona nueva: {nombre, apellido, email, password, dni?, telefono?}.
+// Devuelve {error} o {datos} ya limpios (el email en minúsculas).
+export const validarPersona = (body) => {
+    const nombre = textoObligatorio(body?.nombre, "el nombre", 100);
+    const apellido = textoObligatorio(body?.apellido, "el apellido", 100);
+    const telefono = textoOpcional(body?.telefono, "el telefono", 30);
+    const dni = textoOpcional(body?.dni === undefined || body?.dni === null ? null : String(body.dni), "el dni", 15);
+    const error = nombre.error ?? apellido.error ?? telefono.error ?? dni.error;
+    if(error){
+        return {error};
+    }
+
+    const email = normalizarEmail(body?.email);
+    if(!email || email.length > 150 || !REGEX_EMAIL.test(email)){
+        return {error: "el email no es valido"};
+    }
+    if(typeof body?.password !== "string" || body.password.length < PASSWORD_MINIMA){
+        return {error: `la contraseña debe tener al menos ${PASSWORD_MINIMA} caracteres`};
+    }
+    if(dni.valor && !REGEX_DNI.test(dni.valor)){
+        return {error: "el dni debe tener entre 7 y 9 numeros, sin puntos"};
+    }
+
+    return {datos: {nombre: nombre.valor, apellido: apellido.valor, email, password: body.password, dni: dni.valor, telefono: telefono.valor}};
+};
+
+// Devuelve el valor como número dentro del rango, o {error}. Si no viene (undefined/null/""), devuelve {valor: null}.
+export const numeroOpcional = (valor, campo, {min = -Infinity, max = Infinity, entero = false} = {}) => {
+    if(valor === undefined || valor === null || valor === ""){
+        return {valor: null};
+    }
+    const numero = Number(valor);
+    if(!Number.isFinite(numero) || (entero && !Number.isInteger(numero)) || numero < min || numero > max){
+        return {error: `${campo} no es valido`};
+    }
+
+    return {valor: numero};
+};
