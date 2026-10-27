@@ -2,6 +2,7 @@ import pool from "../data/db.js";
 import { numeroOpcional, parseId, textoObligatorio, textoOpcional } from "../utils/validaciones.js";
 import { responderErrorDeBase } from "../utils/usuarios.js";
 import { MANAGER } from "../middleware/auth.js";
+import { borrarImagen, guardarImagen } from "../utils/imagenes.js";
 
 const ESTADOS = ["publicado", "cancelado", "finalizado"];
 
@@ -162,13 +163,58 @@ export const eliminarEvento = async (req, res) => {
     const idEvento = parseId(req.params.idEvento);
     if (idEvento === null) return res.status(400).json({ mensaje: "el id del evento no es valido" });
 
-    const borrado = await pool.query(`DELETE FROM evento WHERE id_boliche = $1 AND id_evento = $2 RETURNING id_evento`, [req.boliche.id_boliche, idEvento]);
+    const borrado = await pool.query(`DELETE FROM evento WHERE id_boliche = $1 AND id_evento = $2 RETURNING id_evento, imagen`, [req.boliche.id_boliche, idEvento]);
     if (borrado.rows.length === 0) return res.status(404).json({ mensaje: "ese evento no existe" });
+    await borrarImagen(borrado.rows[0].imagen);
 
     res.json({ mensaje: "evento eliminado" });
   } catch (error) {
     if (responderErrorDeBase(error, res)) return;
     console.error(error);
     res.status(500).json({ mensaje: "No se pudo eliminar el evento" });
+  }
+};
+
+// ---------- Flyer del evento ----------
+// Sube (o reemplaza) la imagen del evento. Quien puede editar el evento puede cambiar su imagen.
+export const subirImagenEvento = async (req, res) => {
+  try {
+    const idEvento = parseId(req.params.idEvento);
+    if (idEvento === null) return res.status(400).json({ mensaje: "el id del evento no es valido" });
+    const actual = await buscarEvento(req.boliche.id_boliche, idEvento);
+    if (!actual) return res.status(404).json({ mensaje: "ese evento no existe" });
+    if (!puedeTocar(req, actual)) return res.status(403).json({ mensaje: "el manager solo modifica los eventos que creó" });
+
+    const url = await guardarImagen(`eventos/${req.boliche.id_boliche}`, req.imagen.buffer, req.imagen.extension);
+    try {
+      await pool.query(`UPDATE evento SET imagen = $1 WHERE id_boliche = $2 AND id_evento = $3`, [url, req.boliche.id_boliche, idEvento]);
+    } catch (error) {
+      await borrarImagen(url);
+      throw error;
+    }
+    await borrarImagen(actual.imagen); // la anterior ya no se usa
+
+    res.status(201).json(await buscarEvento(req.boliche.id_boliche, idEvento));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: "No se pudo subir la imagen" });
+  }
+};
+
+export const borrarImagenEvento = async (req, res) => {
+  try {
+    const idEvento = parseId(req.params.idEvento);
+    if (idEvento === null) return res.status(400).json({ mensaje: "el id del evento no es valido" });
+    const actual = await buscarEvento(req.boliche.id_boliche, idEvento);
+    if (!actual) return res.status(404).json({ mensaje: "ese evento no existe" });
+    if (!puedeTocar(req, actual)) return res.status(403).json({ mensaje: "el manager solo modifica los eventos que creó" });
+
+    await pool.query(`UPDATE evento SET imagen = NULL WHERE id_boliche = $1 AND id_evento = $2`, [req.boliche.id_boliche, idEvento]);
+    await borrarImagen(actual.imagen);
+
+    res.json(await buscarEvento(req.boliche.id_boliche, idEvento));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: "No se pudo borrar la imagen" });
   }
 };

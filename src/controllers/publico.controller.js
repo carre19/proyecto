@@ -21,7 +21,7 @@ export const verBoliche = async (req, res) => {
     if (boliche.rows.length === 0) return res.status(404).json({ mensaje: "Ese boliche no existe" });
 
     const eventos = await pool.query(`
-      SELECT id_evento, nombre, fecha_hora, artistas, edad_minima, dress_code, tiene_vip, mesas_vip, descripcion
+      SELECT id_evento, nombre, fecha_hora, artistas, edad_minima, dress_code, tiene_vip, mesas_vip, descripcion, imagen
       FROM evento
       WHERE id_boliche = $1 AND estado = 'publicado' AND fecha_hora >= now() - interval '6 hours'
       ORDER BY fecha_hora`, [boliche.rows[0].id_boliche]);

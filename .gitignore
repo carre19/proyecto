@@ -23,3 +23,6 @@ coverage/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Imágenes subidas por los usuarios (fotos de boliches y flyers)
+uploads/

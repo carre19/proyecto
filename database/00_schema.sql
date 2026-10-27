@@ -111,6 +111,7 @@ CREATE TABLE public.evento (
     tiene_vip boolean NOT NULL DEFAULT false,
     mesas_vip integer,
     descripcion text,
+    imagen character varying(300),
     estado character varying(15) NOT NULL DEFAULT 'publicado',
     id_creador integer,
     fecha_creacion timestamp with time zone NOT NULL DEFAULT now(),
