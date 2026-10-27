@@ -372,3 +372,22 @@ Todas las rutas empiezan con `/api`. Salvo las públicas, requieren `Authorizati
 | `GET /usuarios` · `POST /usuarios` · `PUT /usuarios/:id` | Superadmin | Lista usuarios, da de alta admins, activa o desactiva cuentas |
 
 Los errores devuelven `{ "mensaje": "..." }` con el código HTTP que corresponde (400 datos inválidos, 401 sin sesión, 403 sin permiso, 404 no existe o no es tuyo, 409 dato repetido).
+
+---
+
+# 8. Bitácora de trabajo
+
+Qué se hizo y cuándo, en orden. Se agrega una línea por cada cambio importante (y se commitea al menos cada 20 minutos de trabajo).
+
+| Fecha | Qué se hizo |
+|---|---|
+| 2026-10-27 | Copia del proyecto anterior a la carpeta `Proyecto`, con PostgreSQL local administrado desde pgAdmin 4 en lugar de Supabase; script `database/cargar_base.sh`; repo privado en GitHub |
+| 2026-10-27 | Corrección: el `.env` había perdido `JWT_SECRET` y el login fallaba; ahora el servidor avisa al arrancar si falta |
+| 2026-10-27 | Lectura de la página de Notion "Proyecto nuestro" y **documentación completa en este README** (secciones 1 a 4) |
+| 2026-10-27 | Decisión del equipo: conservar el estilo del front (tipografía griega, mármol, modo oscuro de Ares) y cambiar todo lo demás; el sistema anterior se reemplaza en esta rama y `main` lo conserva |
+| 2026-10-27 | Historial de git limpio, con un único autor |
+| 2026-10-27 | **Base de datos:** esquema multi-boliche con los 5 roles; la separación por local queda garantizada por la base (claves compuestas y triggers); 14 reglas probadas a mano |
+| 2026-10-27 | **API:** autenticación de los 5 roles, boliches y sus admins, equipo de RRPP con comisión, eventos y parte pública; un único middleware decide el acceso a cada boliche |
+| 2026-10-27 | **Pruebas:** 82 comprobaciones de punta a punta (aislamiento entre boliches y permisos de cada rol), todas pasan. Se encontró y corrigió un error al crear eventos (`artistas` como lista) |
+| 2026-10-27 | Script para crear un superadmin real, cuentas demo documentadas y referencia de la API |
+| *Próximo* | Adaptar el front a la plataforma manteniendo su estilo (ver 6.2) |
