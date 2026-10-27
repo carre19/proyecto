@@ -1,12 +1,14 @@
 {
-  "name": "api-eventos",
+  "name": "proyecto-plataforma-boliches",
   "version": "1.0.0",
-  "description": "API del sistema de eventos (CRUD de empresas)",
+  "description": "API de la plataforma para boliches y bares",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "crear-superadmin": "node scripts/crear_superadmin.js",
+    "prueba-api": "python3 pruebas/api_plataforma.py"
   },
   "license": "ISC",
   "dependencies": {
