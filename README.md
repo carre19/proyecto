@@ -1,202 +1,285 @@
-# Proyecto — Sistema de eventos
+# Proyecto — Plataforma para boliches y bares
 
-Sistema para gestionar los eventos de una organizadora: clientes, eventos, propuestas, tareas del personal y empresas.
+Fuente de esta documentación: la página de Notion **"Proyecto nuestro"** (6 de octubre de 2026, @Gianluca). Todo lo que figura en la sección 1 es lo que dice esa página; lo que decidimos nosotros al implementarlo está en la sección 2 y lo que sigue sin definir, en la sección 4.
 
-- **Back:** Node.js + Express 5, PostgreSQL (`pg`), autenticación propia con JWT + bcrypt.
-- **Front:** React 19 + Vite + React Router.
-- **Base de datos:** PostgreSQL local, administrada con **pgAdmin 4** (ver "Base de datos con pgAdmin 4"). Ya no se usa Supabase.
+- **Estado actual:** fase 1 en marcha (ver "Plan de trabajo"). El front se adapta a la plataforma pero **conserva su estilo actual**.
+- **Base de datos:** PostgreSQL local administrada con pgAdmin 4 (ver "Puesta en marcha").
+- **Tecnología:** React + Vite en el front; Node.js + Express + PostgreSQL en el back; un VPS para correr todo.
+
+---
+
+# 1. Documentación funcional
+
+## 1.1 Idea general
+
+El proyecto es un sistema que controla varias páginas de boliches y bares desde una sola plataforma. Cada local tiene su propia página, pero todos se administran desde el mismo lugar.
+
+## 1.2 Roles y paneles
+
+El sistema tiene 5 roles y cada uno tiene su propio panel: 5 paneles en total.
+
+| Rol y panel | Quién es | Qué controla |
+|---|---|---|
+| **Superadmin** | El programador | Todo, en todos los paneles y en todos los locales |
+| **Admin de boliche** | El o los dueños de uno o varios locales | Sus locales: precios, entradas, capacidad, personal, equipo de RRPP y su comisión, páginas, redes, proveedores, gastos e ingresos |
+| **RRPP manager** | Coordina al equipo de RRPP (el admin puede tenerlo o no) | Su equipo de RRPP: altas, asignaciones, supervisión y resultados de ventas |
+| **RRPP** | Trabaja para un local | Sus listas de invitados y la venta de entradas con comisión |
+| **Usuario / cliente** | El público | Ve eventos y consigue entrada |
+
+### Jerarquía y visibilidad
+
+Son 5 niveles. Cada nivel ve los números de lo que tiene por debajo: el manager ve lo que trae cada RRPP y el admin lo de su local. *(La página de Notion lo muestra con un gráfico embebido que no se puede leer desde afuera; lo de arriba es el texto que lo acompaña.)*
+
+### Varios locales
+
+Cada local tiene que ver únicamente sus propios datos; solo el superadmin ve todos los locales a la vez.
+
+- El admin de boliche, el RRPP manager y los RRPP ven solo lo de su boliche.
+- Esa separación conviene resolverla desde el diseño de la base de datos, porque cambiarla después cuesta mucho.
+
+## 1.3 Qué maneja el admin de boliche
+
+Un admin puede tener varios locales y maneja cada uno por separado.
+
+- **Precios:** fija el precio de entrada virtual y el de puerta, en uno o en varios de sus locales.
+- **Entradas y capacidad:** define las entradas y la capacidad de cada local.
+- **Eventos:** crea los eventos de cada noche.
+- **Equipo:** decide si tiene un RRPP manager o no, y define a sus RRPP.
+- **Comisión:** establece la comisión de los RRPP.
+- **Descuentos:** define los descuentos para los clientes con cuenta.
+- **Personal:** se encarga del personal externo del local (seguridad, limpieza, barman y demás), lleva la ficha de cada persona y define cuánta gente de seguridad, limpieza y barman va a cada evento.
+- **Páginas:** accede a la página de cada boliche desde el apartado de ese boliche.
+- **Redes:** ve las cuentas de Instagram y WhatsApp de sus locales.
+- **Finanzas:** lleva el apartado de proveedores, gastos e ingresos.
+
+### Pantalla principal del admin
+
+Al entrar a su panel, el admin ve primero sus boliches o lugares. Bajando, ve:
+
+- Ingresos y gastos.
+- El ranking de ventas por RRPP.
+
+## 1.4 RRPP manager y RRPP
+
+El RRPP manager gestiona al equipo de RRPP, y los RRPP arman listas y venden entradas.
+
+**El RRPP manager puede:**
+
+- Dar de alta RRPP.
+- Asignar y desasignar RRPP.
+- Supervisarlos.
+- Ver los resultados de ventas y cuántas entradas se asignó a cada RRPP.
+- Crear los eventos de cada noche.
+
+**El RRPP puede:**
+
+- Armar listas de invitados.
+- Vender entradas con comisión.
+- Controlar el QR de las entradas en la puerta.
+
+La comisión la establece el admin.
+
+Cada RRPP tiene su propio **talonario** de entradas a mano. El talonario tiene un link propio, conectado con el banco del admin o con la cuenta que el admin prefiera. Con ese link se muestra y se adjudica la venta al RRPP.
+
+**Cada invitado de una lista lleva estos datos:** nombre y apellido, DNI, teléfono y edad.
+
+### Pantalla principal del RRPP
+
+- Sus ventas y su comisión ganada.
+- Las entradas que le asignaron.
+- Sus listas de invitados.
+- El ranking de RRPP.
+
+### Pantalla principal del RRPP manager
+
+- Los resultados de ventas de cada RRPP.
+- Las entradas asignadas a cada RRPP.
+- El ranking de RRPP.
+- Los eventos que creó.
+
+## 1.5 Página del boliche para el cliente
+
+Al entrar a la página de un boliche, el cliente ve:
+
+- Los próximos eventos.
+- Los precios y las tandas de entradas.
+- Las fotos y la ubicación del boliche.
+- Sus entradas compradas, con el QR.
+
+## 1.6 Pantalla principal del superadmin
+
+- La lista de todos los boliches.
+- Las mensualidades y los cobros pendientes.
+- Lo que gana la plataforma por entradas.
+- Los admins y usuarios del sistema.
+
+## 1.7 Pago de entradas
+
+El cliente puede pagar desde la página por transferencia, desde cualquier plataforma. Si no paga ahí, le aparece el precio de puerta.
+
+Cada entrada puede tener dos precios:
+
+- **Virtual:** el que se paga desde la página.
+- **Puerta:** el que se paga en el local.
+
+Reglas:
+
+- El pago se confirma automáticamente cuando llega el dinero.
+- Cuando se confirma el pago, el cliente recibe un QR y un aviso por WhatsApp, y también por Gmail si lo necesita.
+- En puerta se puede pagar por QR, en efectivo o por transferencia.
+- Una entrada ya pagada no se devuelve.
+- La entrada es personal: el cliente no puede pasársela a otra persona.
+- Para comprar una entrada, la página pide nombre, apellido y DNI.
+- Se pueden comprar varias entradas en una misma compra, cargando el nombre y el DNI de cada persona.
+
+## 1.8 Cuenta del cliente
+
+El cliente puede crear una cuenta si quiere; no es obligatoria. Con esa cuenta puede recibir los descuentos que el admin quiera definir.
+
+Ejemplo: un cliente registrado hace más de 6 meses recibe un 5 % de descuento al pagar por transferencia.
+
+## 1.9 Personal externo
+
+Son roles de personal externo: **no tienen panel propio** y el admin se encarga de gestionarlos.
+
+| Rol | Qué hace |
+|---|---|
+| Encargado o gerente | Maneja la noche en el local y responde al admin |
+| Puerta y control de acceso | Controla el ingreso: entradas, listas y QR |
+| Boletería y caja | Cobra y vende entradas en el local |
+| Seguridad | Cuida el orden y el ingreso |
+| Barman | Atiende la barra |
+| Limpieza | Mantiene el local |
+| DJ y artistas | Quienes tocan en cada evento |
+| Guardarropa | Recibe y devuelve abrigos y pertenencias |
+| Mozos y sector VIP | Atienden mesas y reservas |
+
+### Gestión del personal externo
+
+El admin lleva una ficha por persona, para gestionar a quienes trabajan con su local y tener a mano su contacto. Las fichas se van completando con el tiempo.
+
+Para cada evento, el admin define cuánta gente de seguridad, limpieza y barman va.
+
+La ficha tiene: nombre y apellido; rol (qué hace en el local); contacto (los métodos que el admin va agregando); cuándo estuvo (en qué fechas o eventos trabajó); cuánto cobra; y otros datos que el admin quiera sumar.
+
+## 1.10 Proveedores, gastos e ingresos
+
+El admin tiene un apartado para llevar los proveedores, los gastos y los ingresos de sus locales.
+
+- **Proveedores:** se registran todos sus gastos y suministros.
+- **Gastos:** lo que gasta el local.
+- **Ingresos:** lo que entra al local.
+
+Se ven en tres niveles: de cada noche o evento, el general de cada club, y el general de cada admin con todos sus locales juntos.
+
+## 1.11 Datos de un evento
+
+Fecha y hora, artistas, edad mínima, dress code, y mesas y sector VIP si hay.
+
+## 1.12 Tipos de entrada
+
+- **Por tandas:** se vende en varias tandas, cada una a un precio distinto.
+- **VIP:** una entrada aparte para el sector VIP.
+
+## 1.13 Cobro de la plataforma
+
+El superadmin crea cada boliche nuevo. La plataforma cobra de dos formas:
+
+- **Por boliche:** un monto razonable por mes por tener el boliche instalado.
+- **Por entrada:** el 6 % de cada entrada, que paga el cliente.
+
+Si es un solo evento, se cobra otro monto y no hay mensualidad.
+
+## 1.14 Seguridad de los datos
+
+- El DNI de los clientes lo ven el admin, el RRPP manager y los RRPP.
+- Los datos de cada cliente se guardan hasta 3 meses después de la última vez que compró una entrada o interactuó con el sistema.
+- Cada QR sirve una sola vez: si se escanea de nuevo, se rechaza porque ya fue usado.
+- La entrada lleva escrito el número de DNI de la persona. Como último recurso, si alguien tiene que irse y volver, puede presentar su entrada con el DNI escrito junto con su DNI físico.
+- Admins, RRPP y clientes inician sesión con email y contraseña. Los admins tienen además una verificación extra.
+- De los pagos, el RRPP puede ver cuánto vendió, su comisión y el nombre de quien pagó. El RRPP manager ve lo mismo que cada RRPP, de todo su equipo.
+
+## 1.15 Diseño
+
+- **Tipografía:** solo Space Grotesk, en todo el sistema.
+- **Estilo visual:** solo glassmorphism.
+
+> **Estado:** por indicación del equipo, **el estilo del front se deja como está**: se mantienen su tipografía (Cinzel + Philosopher), el mármol del modo claro, el modo oscuro de Ares y su estructura visual. Aplicar Space Grotesk + glassmorphism queda como pendiente, para cuando el equipo lo pida.
+
+## 1.16 Tecnología
+
+El sistema se hace con React y Vite, y va a necesitar un VPS para correr.
+
+- Frontend: React con Vite.
+- Servidor: un VPS.
+- Cada boliche tiene su página en un subdominio de la plataforma.
+
+---
+
+# 2. Decisiones técnicas que tomamos al implementar
+
+Estas decisiones no están en la página de Notion: las tomamos para poder avanzar y se pueden cambiar.
+
+| Tema | Decisión | Por qué |
+|---|---|---|
+| Backend y base | Node.js + Express + PostgreSQL (el que ya usamos), administrado con pgAdmin 4 | Es lo que está pendiente en Notion y ya está andando |
+| Separación por local | Toda tabla de un local lleva `id_boliche`, y el acceso lo decide un único middleware que mira el rol y los boliches de la persona | Pide Notion: resolverlo desde el diseño, no con filtros sueltos |
+| Roles | Un único campo `rol` en el usuario, con los 5 valores del documento | Un usuario tiene un solo rol; lo que cambia es a qué boliches accede |
+| Quién accede a qué local | Admin: tabla `boliche_admin` (puede tener varios). Manager y RRPP: tabla `boliche_equipo` (un local). Superadmin: todos. Cliente: ninguno (solo ve lo público) | El admin tiene varios locales; manager y RRPP uno |
+| Subdominio | Cada boliche guarda su `subdominio` único. Mientras no haya dominio, la página pública se ve en `/b/:subdominio` | El dominio sigue sin definir |
+| Contraseñas | bcrypt; el login pide email y contraseña | Lo que dice Notion; la verificación extra de admins llega en una fase posterior |
+| Diseño | **Se conserva el estilo actual del front.** El front se adapta a la plataforma (paneles, pantallas y menús por rol) reutilizando sus componentes y su estilo; Space Grotesk + glassmorphism (Notion) queda pendiente | Indicación del equipo: dejar el estilo igual |
+| Convivencia con lo anterior | La plataforma vive en un **esquema aparte de PostgreSQL (`plataforma`)** y en rutas nuevas (`/api/plataforma/...`). Las tablas y rutas del sistema anterior (gestor de una organizadora) siguen en `public` y `/api` sin tocar; la rama `main` conserva el sistema anterior completo | No perder lo hecho, y poder volver atrás |
+
+---
+
+# 3. Plan de trabajo
+
+| Fase | Contenido | Estado |
+|---|---|---|
+| **0** | Documentación en este README, copia del proyecto con PostgreSQL local | ✅ Hecha |
+| **1** | Esquema multi-boliche; los 5 roles con su login; **panel del superadmin** (boliches y sus admins, usuarios); **panel del admin** (sus boliches, equipo y eventos de cada noche); **panel del manager** (su equipo y eventos); **página pública del boliche**; pruebas de que cada local ve únicamente lo suyo. Todo con el estilo actual del front | 🔨 En curso |
+| **2** | Entradas: tandas, VIP, precios virtual y de puerta, capacidad; compra con nombre, apellido y DNI; QR de un solo uso y control en puerta | ⏳ |
+| **3** | Pagos: confirmación automática de la transferencia, avisos por WhatsApp y Gmail, comisión de la plataforma (6 %) | ⏳ Depende de definiciones |
+| **4** | RRPP: alta y asignación, talonarios con link propio, listas de invitados, comisión, rankings y resultados | ⏳ |
+| **5** | Personal externo (fichas y dotación por evento), proveedores, gastos e ingresos en sus tres niveles | ⏳ |
+| **6** | Cuenta del cliente y descuentos, verificación extra del admin, borrado de datos a los 3 meses, cobros y mensualidades del superadmin, despliegue en el VPS | ⏳ |
+
+---
+
+# 4. Pendientes por definir
+
+Lo que figura en Notion como sin resolver. Frena parte de las fases 3 y 6.
+
+- [ ] Los montos: la mensualidad por boliche y el monto de un evento único.
+- [ ] Qué dominio va a tener la plataforma (cada boliche usa un subdominio de ese dominio).
+- [ ] Cómo funciona el link del talonario: si va impreso en las entradas a mano y con qué banco o cuenta se conecta.
+- [ ] Con qué servicio se detecta que llegó la transferencia para confirmarla automáticamente.
+- [ ] Cómo se obtiene el teléfono o el Gmail del cliente para el aviso, si al comprar solo se piden nombre, apellido y DNI.
+- [ ] Si la regla de los 3 meses vale también para los clientes con cuenta, o solo para quienes compran una vez.
+- [x] Qué backend y base de datos usar: **Node.js + PostgreSQL** (ver sección 2). Falta elegir el proveedor del VPS.
+
+---
+
+# 5. Puesta en marcha
 
 ## Base de datos con pgAdmin 4
 
-La base es un PostgreSQL local (versión 12 o superior) y se maneja desde pgAdmin 4. Pasos la primera vez:
+La base es un PostgreSQL local (versión 12 o superior) que se maneja desde pgAdmin 4.
 
-1. **Conexión.** En pgAdmin: *Servers > local* (host `localhost`, puerto `5432`, usuario `postgres`). Esos mismos datos van en el `.env`.
-2. **Archivo `.env`.** Copiar `.env.example` como `.env` y completar `DB_PASSWORD` con la contraseña de tu usuario de Postgres. El `.env` no se sube a GitHub.
-3. **Crear y cargar la base `proyecto`**, de cualquiera de estas dos formas:
-   - **Con el script:** `./database/cargar_base.sh` crea la base, el esquema, los catálogos y los datos de prueba. Con `--reset` la borra y la vuelve a crear.
-   - **A mano en pgAdmin:** clic derecho en *Databases > Create > Database…*, nombre `proyecto`. Luego *Query Tool* sobre esa base y ejecutar, en orden, `database/00_schema.sql`, `database/01_datos_iniciales.sql` y `database/02_datos_prueba.sql` (abrir el archivo y apretar *Execute*).
+1. **Conexión.** En pgAdmin: *Servers → tu servidor* (host `localhost`, puerto `5432`, usuario `postgres`). Esos mismos datos van en el `.env`.
+2. **Archivo `.env`.** Copiar `.env.example` como `.env` y completar `DB_PASSWORD`. **No borrar las demás líneas** (sobre todo `JWT_SECRET`). El `.env` no se sube a GitHub.
+3. **Crear y cargar la base**, de cualquiera de estas dos formas:
+   - **Con el script:** `./database/cargar_base.sh` crea la base y carga el esquema, los catálogos y los datos de prueba. Con `--reset` la borra y la vuelve a crear.
+   - **A mano en pgAdmin:** clic derecho en *Databases → Create → Database…*; luego *Query Tool* sobre esa base y ejecutar, en orden, `database/00_schema.sql`, `01_datos_iniciales.sql` y `02_datos_prueba.sql`.
 4. **Levantar la app:** `npm install && npm run dev` (back en http://localhost:3000) y, en otra terminal, `cd frontend && npm install && npm run dev` (front en http://localhost:5173).
 
-Las migraciones de `database/migraciones/` son para bases viejas: una base nueva ya trae todo en `00_schema.sql`.
-
-## Estructura
-
-```
-├── src/                      Back (API REST)
-│   ├── index.js              Arranque del servidor y registro de rutas
-│   ├── data/db.js            Pool de conexión a Postgres
-│   ├── middleware/           verificarToken y verificarRol
-│   ├── controllers/          Lógica de cada recurso
-│   └── routes/               Rutas de cada recurso
-├── frontend/                 Front (React + Vite; en Docker lo sirve nginx)
-├── database/                 Scripts SQL (se ejecutan en orden al crear la base)
-│   ├── 00_schema.sql         Esquema definitivo: tablas, restricciones, funciones y triggers
-│   ├── 01_datos_iniciales.sql  Catálogos necesarios (roles)
-│   ├── 02_datos_prueba.sql   Datos de prueba para desarrollo
-│   └── migraciones/          Migraciones históricas (Docker no las ejecuta)
-├── docker-compose.yml        Levanta db + back + front
-└── rebuild.sh                Reconstruye y levanta todo con los últimos cambios
-```
-
-## Puesta en marcha
-
-### 1. Variables de entorno
-
-Copiar el ejemplo y completar `JWT_SECRET`:
-
-```bash
-cp .env.example .env
-node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"   # genera un secreto
-```
-
-| Variable | Descripción | Valor local |
+| Variable | Descripción | Ejemplo |
 |---|---|---|
 | `PORT` | Puerto del back | `3000` |
 | `DB_HOST` / `DB_PORT` | Host y puerto de Postgres | `localhost` / `5432` |
-| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Credenciales de la base | `postgres` / tu contraseña / `proyecto` |
+| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Credenciales de la base | `postgres` / tu clave / `Proyecto` |
 | `DB_SSL` | `true` solo si la base exige SSL | `false` |
-| `JWT_SECRET` | Secreto para firmar los tokens (obligatorio) | — |
-| `JWT_EXPIRES_IN` | Duración del token | `8h` |
+| `JWT_SECRET` | Secreto para firmar las sesiones (obligatorio: sin él el servidor no arranca) | texto largo y aleatorio |
+| `JWT_EXPIRES_IN` | Duración de la sesión | `8h` |
 | `FRONTEND_URL` | Origen permitido por CORS | `http://localhost:5173` |
-
-### 2a. Todo con Docker
-
-```bash
-docker compose up -d --build     # o ./rebuild.sh
-```
-
-- Front: http://localhost:8081
-- Back: http://localhost:3000
-- Postgres: `localhost:5432`
-
-`docker-compose.yml` toma `JWT_SECRET` y `JWT_EXPIRES_IN` del `.env`.
-
-### 2b. Desarrollo local (base en Docker, back y front con Node)
-
-```bash
-docker compose up -d db          # solo la base
-npm install && npm run dev       # back en http://localhost:3000 (se reinicia al guardar)
-cd front && npm install && npm run dev   # front en http://localhost:5173
-```
-
-En desarrollo Vite redirige `/api` al back, así que no hace falta configurar CORS aparte.
-
-## Base de datos
-
-Al crear el contenedor por primera vez, Postgres ejecuta en orden alfabético los `.sql` de `database/` (00, 01, 02…) e ignora las subcarpetas.
-
-> **Importante:** los scripts solo corren si el volumen está vacío. Después de cambiar algún `.sql` hay que recrear la base (**borra los datos locales**):
->
-> ```bash
-> docker compose down -v && docker compose up -d
-> ```
->
-> `rebuild.sh` conserva el volumen, así que no aplica cambios en los `.sql`.
-
-Para agregar cambios al esquema: actualizar `00_schema.sql`. Si hay que cargar más datos, crear un nuevo archivo numerado (`03_...sql`).
-
-Consultar la base:
-
-```bash
-docker exec -it eventos-db psql -U eventos -d eventos
-```
-
-### Tablas principales
-
-| Área | Tablas |
-|---|---|
-| Acceso y personal | `usuario`, `personal`, `rol`, `personal_rol` |
-| Empresas (multiempresa) | `empresas` |
-| Clientes y eventos | `cliente`, `evento`, `cambio_evento` |
-| Servicios y proveedores | `servicio`, `proveedor`, `proveedor_servicio`, `servicio_excluido_evento` |
-| Propuestas | `propuesta`, `detalle_propuesta` |
-| Tareas | `tarea` |
-| Cierre | `cierre`, `aviso_proveedor_cancelacion` |
-
-### Multiempresa
-
-Cada empresa (`empresas`) es una organizadora con sus propios datos. `personal`, `cliente`, `evento`, `servicio` y `proveedor` llevan `id_empresa`; todo lo demás (propuestas, tareas, cierres, etc.) pertenece a la empresa de su evento.
-
-- La empresa del usuario sale de `personal.id_empresa` y se lee de la base en cada pedido (no del token). Todas las consultas filtran por ella: un id de otra empresa responde `404`.
-- Al crear la cuenta se elige la empresa (`GET /auth/empresas` lista las activas). Quien se registra queda sin rol hasta que la responsable de **su** empresa se lo asigne.
-- **Una empresa nace con su responsable.** El superadmin crea la empresa con `POST /empresas` incluyendo `responsable: {nombre, email, password}`: en una sola transacción se crean la empresa, la cuenta de acceso y la persona con rol `responsable` (si algo falla no queda nada a medias). Si una empresa se queda sin responsable, `POST /empresas/:id/responsable` suma otro. `GET /empresas` devuelve también quiénes son sus responsables y cuánta gente tiene.
-- **El responsable arma su equipo con cuentas.** `POST /personal` acepta `email` y `password` (se piden juntos): crea a la persona y su usuario para que pueda ingresar, y después se le asignan roles con `PUT /personal/:id/roles`. `PUT /personal/:id` permite cambiar el email o la contraseña. Una persona puede tener varios roles (en un equipo chico alguien cumple varias responsabilidades).
-- **La responsable es la dueña de la empresa y puede todo lo de su empresa.** Además de aprobar propuestas y gestionar el equipo, tiene los permisos del organizador (clientes, proveedores, servicios, eventos, propuestas, tareas y cierres, en cualquier evento de la empresa) y del coordinador (confirmaciones de proveedores y avisos). Se aplica en `verificarToken` (se le suman esos roles) y en `duenoDelEvento` (no se le exige ser el organizador del evento). El organizador y el coordinador siguen limitados a lo suyo.
-- **Protecciones:** la empresa siempre conserva al menos un responsable (no se le puede quitar el rol al último) y nadie puede eliminarse a sí mismo. Al eliminar a una persona se libera su email.
-- El rol `superadmin` es de la plataforma: su `personal.id_empresa` es `NULL`, solo administra `/empresas` y no ve datos de ninguna empresa. Ninguna empresa puede asignarlo (se crea a mano, ver abajo).
-- Una empresa desactivada (`activo = false`) no puede ingresar.
-- **Datos de contacto y nombre completo.** `personal` suma `apellido`, `telefono` y `email_contacto`; `cliente` suma `apellido` y `direccion`; `proveedor` suma `direccion`. `nombre_completo` (nombre + apellido) es una columna calculada por la base y es lo que se muestra en listas, selectores, fichas y el enlace público. **Bases existentes: ejecutar `database/migraciones/datos_contacto.sql`** (se puede repetir, no pisa datos; el backend nuevo la necesita). Las bases nuevas ya la traen en `00_schema.sql`.
-- Bases existentes: ejecutar `database/migraciones/multiempresa.sql`; deja todo lo cargado en la primera empresa.
-
-Crear un superadmin: registrarse y asignar el rol, quitando la empresa a la persona:
-
-```sql
-UPDATE personal SET id_empresa = NULL WHERE usuario_id = (SELECT id_usuario FROM usuario WHERE email = 'admin@ejemplo.com');
-INSERT INTO personal_rol (id_personal, id_rol)
-SELECT p.id_personal, r.id_rol FROM personal p, rol r
-WHERE p.usuario_id = (SELECT id_usuario FROM usuario WHERE email = 'admin@ejemplo.com') AND r.nombre = 'superadmin';
-```
-
-Reglas que aplica la base:
-- Un evento no puede pasar a `aceptada`, `confirmado`, `preparacion` o `realizado` sin fecha, sede y cantidad de asistentes (trigger `trg_validar_evento_confirmado`).
-- Si se modifica una propuesta `aprobada` o `enviada`, vuelve a `pendiente_aprobacion` (trigger `trg_reabrir_propuesta_modificada`).
-
-## Autenticación
-
-Auth propio con JWT (no se usa Supabase Auth).
-
-- Las credenciales se guardan en `usuario`; la contraseña nunca se guarda en texto plano, solo su hash bcrypt en `usuario.password_hash`.
-- Cada usuario está vinculado a una persona de `personal` (`personal.usuario_id`). Al registrarse se crean los dos registros.
-- Los roles salen de `personal_rol` y viajan dentro del token (`roles: [...]`).
-
-Para usar la API: hacer login y mandar el token en cada pedido:
-
-```
-Authorization: Bearer <token>
-```
-
-Un usuario recién registrado no tiene roles. Por ahora se asignan a mano:
-
-```sql
-INSERT INTO personal_rol (id_personal, id_rol)
-SELECT 1, id_rol FROM rol WHERE nombre = 'responsable';
-```
-
-Para restringir una ruta por rol:
-
-```js
-import { verificarToken, verificarRol } from "../middleware/auth.middleware.js";
-
-router.delete("/:id", verificarToken, verificarRol("responsable"), eliminarEmpresa);
-```
-
-## API
-
-Todas las rutas empiezan con `/api`. Salvo `register`, `login` y `auth/empresas`, todas requieren token.
-
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/auth/empresas` | Empresas activas para elegir al registrarse (público) |
-| POST | `/auth/register` | Registra un usuario. Body: `{ nombre, email, password, id_empresa }` (mín. 8 caracteres) |
-| POST | `/auth/login` | Devuelve `{ token, usuario }`. Body: `{ email, password }` |
-| GET | `/auth/perfil` | Datos del usuario logueado |
-
-Los recursos `/empresas`, `/clientes`, `/evento`, `/propuesta` y `/tarea` tienen el mismo CRUD:
-
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/<recurso>` | Lista todos |
-| GET | `/<recurso>/:id` | Obtiene uno |
-| POST | `/<recurso>` | Crea |
-| PUT | `/<recurso>/:id` | Edita |
-| DELETE | `/<recurso>/:id` | Elimina |
-
-Ejemplo:
-
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"ana@ejemplo.com","password":"secreta123"}'
-
-curl http://localhost:3000/api/empresas -H "Authorization: Bearer <token>"
-```
