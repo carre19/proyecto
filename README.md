@@ -377,7 +377,7 @@ Los errores devuelven `{ "mensaje": "..." }` con el código HTTP que corresponde
 
 # 8. Bitácora de trabajo
 
-Qué se hizo y cuándo, en orden. Se agrega una línea por cada cambio importante (y se commitea al menos cada 20 minutos de trabajo).
+Qué se hizo y cuándo, en orden. Se agrega una línea por cada cambio importante (y se commitea al menos cada 5 minutos de trabajo).
 
 | Fecha | Qué se hizo |
 |---|---|
