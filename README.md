@@ -238,7 +238,7 @@ Estas decisiones no están en la página de Notion: las tomamos para poder avanz
 | Fase | Contenido | Estado |
 |---|---|---|
 | **0** | Documentación en este README, copia del proyecto con PostgreSQL local | ✅ Hecha |
-| **1** | Esquema multi-boliche; los 5 roles con su login; **panel del superadmin** (boliches y sus admins, usuarios); **panel del admin** (sus boliches, equipo y eventos de cada noche); **panel del manager** (su equipo y eventos); **página pública del boliche**; pruebas de que cada local ve únicamente lo suyo. Todo con el estilo actual del front | 🔨 En curso |
+| **1** | Esquema multi-boliche; los 5 roles con su login; **panel del superadmin** (boliches y sus admins, usuarios); **panel del admin** (sus boliches, equipo y eventos de cada noche); **panel del manager** (su equipo y eventos); **página pública del boliche**; pruebas de que cada local ve únicamente lo suyo. Todo con el estilo actual del front | 🔨 Base de datos y API terminadas y probadas; **falta el front** |
 | **2** | Entradas: tandas, VIP, precios virtual y de puerta, capacidad; compra con nombre, apellido y DNI; QR de un solo uso y control en puerta | ⏳ |
 | **3** | Pagos: confirmación automática de la transferencia, avisos por WhatsApp y Gmail, comisión de la plataforma (6 %) | ⏳ Depende de definiciones |
 | **4** | RRPP: alta y asignación, talonarios con link propio, listas de invitados, comisión, rankings y resultados | ⏳ |
@@ -270,8 +270,8 @@ La base es un PostgreSQL local (versión 12 o superior) que se maneja desde pgAd
 1. **Conexión.** En pgAdmin: *Servers → tu servidor* (host `localhost`, puerto `5432`, usuario `postgres`). Esos mismos datos van en el `.env`.
 2. **Archivo `.env`.** Copiar `.env.example` como `.env` y completar `DB_PASSWORD`. **No borrar las demás líneas** (sobre todo `JWT_SECRET`). El `.env` no se sube a GitHub.
 3. **Crear y cargar la base**, de cualquiera de estas dos formas:
-   - **Con el script:** `./database/cargar_base.sh` crea la base y carga el esquema, los catálogos y los datos de prueba. Con `--reset` la borra y la vuelve a crear.
-   - **A mano en pgAdmin:** clic derecho en *Databases → Create → Database…*; luego *Query Tool* sobre esa base y ejecutar, en orden, `database/00_schema.sql`, `01_datos_iniciales.sql` y `02_datos_prueba.sql`.
+   - **Con el script:** `./database/cargar_base.sh` crea la base y carga el esquema y los datos de prueba. Con `--reset` la borra y la vuelve a crear.
+   - **A mano en pgAdmin:** clic derecho en *Databases → Create → Database…*; luego *Query Tool* sobre esa base y ejecutar, en orden, `database/00_schema.sql` y `database/01_datos_prueba.sql`.
 4. **Levantar la app:** `npm install && npm run dev` (back en http://localhost:3000) y, en otra terminal, `cd frontend && npm install && npm run dev` (front en http://localhost:5173).
 
 | Variable | Descripción | Ejemplo |
@@ -283,3 +283,92 @@ La base es un PostgreSQL local (versión 12 o superior) que se maneja desde pgAd
 | `JWT_SECRET` | Secreto para firmar las sesiones (obligatorio: sin él el servidor no arranca) | texto largo y aleatorio |
 | `JWT_EXPIRES_IN` | Duración de la sesión | `8h` |
 | `FRONTEND_URL` | Origen permitido por CORS | `http://localhost:5173` |
+
+## Cuentas de prueba
+
+Los datos de prueba (`database/01_datos_prueba.sql`) traen una cuenta de cada rol, todas con la contraseña **`demo12345`** (solo para desarrollo):
+
+| Email | Rol | A qué accede |
+|---|---|---|
+| `superadmin@demo.com` | Superadmin | Todos los boliches |
+| `admin1@demo.com` | Admin | Boliche Uno y Bar Dos |
+| `admin2@demo.com` | Admin | Club Tres |
+| `manager1@demo.com` | RRPP manager | Boliche Uno |
+| `rrpp1@demo.com`, `rrpp2@demo.com` | RRPP | Boliche Uno |
+| `cliente@demo.com` | Cliente | Solo lo público |
+
+Para crear un superadmin real (sin los datos de prueba): `npm run crear-superadmin -- email@dominio.com "una contraseña" Nombre Apellido`.
+
+---
+
+# 6. Estado de avance
+
+Se actualiza con cada cambio importante. Última actualización: fase 1, base de datos y API.
+
+## 6.1 Lo que está hecho
+
+**Base de datos** (`database/00_schema.sql`)
+- Tablas: `usuario` (5 roles), `boliche`, `boliche_admin` (un admin puede tener varios boliches), `boliche_equipo` (manager y RRPP, cada uno en un solo boliche, con comisión) y `evento`.
+- La separación por local está resuelta **desde la base**, como pide Notion: claves compuestas y triggers hacen que el manager de un RRPP sea del mismo boliche, que el rol del equipo coincida con el del usuario, que solo un admin administre un boliche y que solo gente del boliche cree sus eventos. Se probaron a mano 14 casos incorrectos y la base rechazó todos.
+
+**API** (`src/`)
+- Registro de clientes y login para los 5 roles; el panel de cada uno (sus boliches) se arma desde la base, no desde el token, así desactivar una cuenta o cambiarle el rol vale al instante.
+- **Un único middleware** (`accesoBoliche`) decide a qué boliche entra cada persona. Quien no es del boliche recibe 404; un boliche desactivado solo lo ve el superadmin.
+- Superadmin: crea boliches con su admin, suma y quita admins (nunca queda un boliche sin admin), desactiva boliches y cuentas, lista usuarios.
+- Admin: edita los datos de su local (no el subdominio, el cobro ni el estado), arma su equipo, fija la comisión de cada RRPP y crea eventos.
+- Manager: da de alta RRPP, los asigna y desasigna, y crea y edita sus eventos (no los de otros).
+- RRPP y cliente: ven lo suyo; el cliente solo la parte pública.
+- Parte pública: boliches activos y sus próximos eventos, sin ningún dato interno (cobro, equipo, etc.).
+- **82 pruebas de punta a punta** (`pruebas/api_plataforma.py`), incluidas las de aislamiento entre boliches y de permisos de cada rol. Todas pasan.
+
+## 6.2 Lo que falta de la fase 1
+
+- [ ] **Front:** adaptar las pantallas al sistema nuevo, manteniendo el estilo actual (tipografía griega, mármol, modo oscuro de Ares):
+  - login y registro de clientes;
+  - panel del superadmin (boliches, sus admins y usuarios);
+  - panel del admin (sus boliches, equipo y eventos);
+  - panel del manager (su equipo y eventos) y panel mínimo del RRPP;
+  - lista de boliches y página pública de cada boliche (`/b/:subdominio`).
+- [ ] Quitar del front las pantallas del sistema anterior (eventos de una organizadora, propuestas, tareas, etc.).
+- [ ] Probar el front de punta a punta en un navegador, en los dos modos de color y en celular.
+
+## 6.3 Lo que falta de las fases siguientes
+
+Ver la tabla de la sección 3: entradas y QR (fase 2), pagos (fase 3), RRPP con talonarios y listas (fase 4), personal externo y finanzas (fase 5), y cuenta del cliente, verificación extra, borrado a los 3 meses y despliegue (fase 6). Las fases 3 y 6 dependen de los pendientes de la sección 4.
+
+## 6.4 Cosas a tener en cuenta
+
+- Las pruebas de la API borran y crean datos: correrlas solo sobre una base recién cargada (`./database/cargar_base.sh --reset`).
+- La dirección pública de cada boliche será `/b/:subdominio` hasta que se defina el dominio de la plataforma.
+- Un RRPP puede ir con un manager o directo con el admin (el manager es opcional, como dice Notion).
+- La verificación extra de los admins, los descuentos del cliente y el borrado de datos a los 3 meses no están hechos todavía; la tabla `usuario` ya guarda `ultima_actividad` para el borrado.
+
+---
+
+# 7. Referencia de la API
+
+Todas las rutas empiezan con `/api`. Salvo las públicas, requieren `Authorization: Bearer <token>`.
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `POST /auth/register` | Cualquiera | Crea una cuenta de **cliente** |
+| `POST /auth/login` | Cualquiera | Inicia sesión; devuelve el token y los boliches de la persona |
+| `GET /auth/perfil` | Con sesión | Datos de la persona y sus boliches |
+| `GET /publico/boliches` | Cualquiera | Boliches activos |
+| `GET /publico/boliches/:subdominio` | Cualquiera | Página de un boliche con sus próximos eventos |
+| `GET /boliches` | Superadmin, admin, manager, RRPP | Boliches a los que accede la persona |
+| `POST /boliches` | Superadmin | Crea un boliche con su admin (`admin` nuevo o `id_admins`) |
+| `GET /boliches/:id` | Los del boliche | Un boliche con sus admins y su equipo |
+| `PUT /boliches/:id` | Superadmin (todo), admin (solo datos del local) | Edita el boliche |
+| `POST /boliches/:id/admins` · `DELETE /boliches/:id/admins/:idUsuario` | Superadmin | Suma o quita un admin |
+| `GET /boliches/:id/equipo` | Superadmin, admin, manager | Equipo de RRPP (el manager ve los suyos y los libres) |
+| `POST /boliches/:id/equipo` | Superadmin, admin, manager | Da de alta un manager o un RRPP |
+| `PUT /boliches/:id/equipo/:idUsuario` | Superadmin, admin, manager | Comisión y manager (el manager solo asigna y desasigna) |
+| `DELETE /boliches/:id/equipo/:idUsuario` | Superadmin, admin | Baja: sale del equipo y se desactiva la cuenta |
+| `GET /boliches/:id/eventos` | Los del boliche | Eventos (`?estado=` y `?proximos=true`) |
+| `POST /boliches/:id/eventos` | Superadmin, admin, manager | Crea un evento |
+| `PUT /boliches/:id/eventos/:idEvento` | Superadmin, admin, manager (solo los suyos) | Edita un evento |
+| `DELETE /boliches/:id/eventos/:idEvento` | Superadmin, admin | Borra un evento |
+| `GET /usuarios` · `POST /usuarios` · `PUT /usuarios/:id` | Superadmin | Lista usuarios, da de alta admins, activa o desactiva cuentas |
+
+Los errores devuelven `{ "mensaje": "..." }` con el código HTTP que corresponde (400 datos inválidos, 401 sin sesión, 403 sin permiso, 404 no existe o no es tuyo, 409 dato repetido).
