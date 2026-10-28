@@ -16,6 +16,8 @@
     "prueba-fase3": "python3 pruebas/api_fase3.py",
     "prueba-fase4": "python3 pruebas/api_fase4.py",
     "prueba-fase5": "python3 pruebas/api_fase5.py",
+    "prueba-fase6": "python3 pruebas/api_fase6.py",
+    "prueba-fase6-servicios": "python3 pruebas/api_fase6_servicios.py",
     "prueba-fase3-servicios": "python3 pruebas/api_fase3_servicios.py"
   },
   "license": "ISC",

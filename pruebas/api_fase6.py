@@ -3,16 +3,9 @@ superadmin (y lo que gana la plataforma) y borrado de datos personales a los 3 m
 Corre contra una base recién cargada, con el backend en modo normal. Hace falta PGHOST/PGPORT/PGUSER/PGPASSWORD/PGDATABASE para
 envejecer fechas (las comprobaciones que dependen de eso se saltean si no están).
     API=http://localhost:3000/api python3 pruebas/api_fase6.py"""
-import base64, hashlib, hmac, re, struct, time
-from comun import chk, entrar, fin, pedir, saltear, sql, verdad
+import re, time
+from comun import chk, entrar, fin, pedir, saltear, sql, totp, verdad
 
-# ----- TOTP (RFC 6238) hecho a mano: se prueba el servidor contra un generador independiente -----
-def totp(secreto, paso=None):
-    paso = int(time.time() // 30) if paso is None else paso
-    clave = base64.b32decode(secreto + "=" * (-len(secreto) % 8))
-    h = hmac.new(clave, struct.pack(">Q", paso), hashlib.sha1).digest()
-    o = h[-1] & 0xF
-    return str((struct.unpack(">I", h[o:o + 4])[0] & 0x7FFFFFFF) % 1000000).zfill(6)
 ahora = lambda: int(time.time() // 30)
 
 TS, _ = entrar("superadmin@demo.com"); TA1, UA1 = entrar("admin1@demo.com"); TA2, UA2 = entrar("admin2@demo.com")

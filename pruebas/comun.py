@@ -1,7 +1,7 @@
 """Ayudas compartidas por las pruebas de las fases 2 a 6 (cada archivo de prueba corre solo, contra una base recién cargada).
 Variables: API (por defecto http://localhost:3000/api). Para las comprobaciones que tocan la base directo (vencimientos,
 borrado de datos) hacen falta PGHOST, PGPORT, PGUSER, PGPASSWORD y PGDATABASE; si faltan, esas líneas se saltean."""
-import json, os, struct, subprocess, sys, urllib.request, urllib.error, zlib
+import base64, hashlib, hmac, json, os, struct, subprocess, sys, time, urllib.request, urllib.error, zlib
 B = os.environ.get("API", "http://localhost:3000/api")
 ORIGEN = B.rsplit("/api", 1)[0]
 fallas = []
@@ -44,6 +44,15 @@ def entrar(email, clave="demo12345"):
     s, d = pedir("POST", "/auth/login", {"email": email, "password": clave})
     assert s == 200, (email, d)
     return d["token"], d["usuario"]
+
+
+def totp(secreto, paso=None):
+    """Código de verificación en dos pasos (RFC 6238) hecho a mano: así se prueba el servidor contra un generador independiente."""
+    paso = int(time.time() // 30) if paso is None else paso
+    clave = base64.b32decode(secreto + "=" * (-len(secreto) % 8))
+    h = hmac.new(clave, struct.pack(">Q", paso), hashlib.sha1).digest()
+    o = h[-1] & 0xF
+    return str((struct.unpack(">I", h[o:o + 4])[0] & 0x7FFFFFFF) % 1000000).zfill(6)
 
 
 def sql(consulta):
