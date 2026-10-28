@@ -19,6 +19,10 @@ export const responderErrorDeBase = (error, res) => {
     if(error.code === "23505"){
         const mensaje = error.constraint === "boliche_subdominio_key" ? "ese subdominio ya está en uso"
             : error.constraint === "usuario_email_key" ? "ese email ya está registrado"
+            : error.constraint === "tipo_entrada_nombre_key" ? "ya hay una entrada con ese nombre en este evento"
+            : error.constraint === "bebida_nombre_key" ? "ya cargaste una bebida con ese nombre en esa categoría"
+            : error.constraint === "mesa_vip_nombre_key" ? "ya hay una mesa VIP con ese nombre"
+            : error.constraint === "boliche_foto_portada_key" ? "el boliche ya tiene una foto de portada"
             : "ese dato ya existe";
         res.status(409).json({mensaje});
         return true;
