@@ -1,0 +1,81 @@
+import { Alert, Button, Result, Skeleton, Space, Tag } from "antd";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { comprasApi } from "../api/plataforma.js";
+import CabeceraPublica from "../components/CabeceraPublica.jsx";
+import TarjetaEntrada from "../components/ventas/TarjetaEntrada.jsx";
+import { fechaHora, moneda } from "../utils/formato.js";
+
+const ESTADO = { pendiente: ["gold", "Esperando el pago"], pagada: ["green", "Pagada"], cancelada: ["red", "Cancelada o vencida"] };
+
+// Página de una compra (/compra/:token): quien tiene el link la ve sin necesidad de una cuenta.
+// Pendiente: cuánto y cómo pagar (se actualiza sola cuando llega el pago). Pagada: los QR, uno por persona.
+export default function Compra() {
+  const { token } = useParams();
+  const [compra, setCompra] = useState(null);
+  const [noExiste, setNoExiste] = useState(false);
+
+  const cargar = useCallback(() => comprasApi.ver(token).then(setCompra).catch(() => setNoExiste(true)), [token]);
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  // Mientras espera el pago, consulta cada pocos segundos.
+  useEffect(() => {
+    if (compra?.estado !== "pendiente") return undefined;
+    const reloj = setInterval(cargar, 8000);
+    return () => clearInterval(reloj);
+  }, [compra?.estado, cargar]);
+
+  if (noExiste) {
+    return (
+      <div className="pub">
+        <CabeceraPublica />
+        <Result status="404" title="No encontramos esta compra" subTitle="Revisá que el link esté completo." extra={<Link to="/explorar"><Button type="primary">Ver los boliches</Button></Link>} />
+      </div>
+    );
+  }
+  if (!compra) return <div className="pub"><CabeceraPublica /><Skeleton active paragraph={{ rows: 6 }} /></div>;
+
+  const [color, texto] = ESTADO[compra.estado];
+  return (
+    <div className="pub">
+      <CabeceraPublica />
+      <div className="pub-ancho compra">
+        <span className="eyebrow">TU COMPRA</span>
+        <h1>{compra.evento}</h1>
+        <Space wrap>
+          <span className="muted">{compra.boliche} · {fechaHora(compra.fecha_hora)}</span>
+          <Tag color={color}>{texto}</Tag>
+        </Space>
+
+        {compra.estado === "pendiente" && (
+          <Alert
+            type="warning"
+            showIcon
+            title={`Pagá ${moneda(compra.total)} antes de las ${new Date(compra.vence_en).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`}
+            description={
+              <>
+                Pagás desde cualquier plataforma, por transferencia. Pon{"é"} este código de referencia: <strong>{compra.referencia}</strong>. Si no pagás a tiempo, se liberan las entradas; en la puerta se paga el precio de puerta.
+              </>
+            }
+          />
+        )}
+        {compra.estado === "cancelada" && <Alert type="error" showIcon title="Esta compra se canceló o venció." description="Las entradas se liberaron. Podés volver a comprar." />}
+        {compra.estado === "pagada" && <Alert type="success" showIcon title="Pago confirmado" description="Presentá el QR en la puerta. Cada QR sirve una sola vez y la entrada es personal: no se puede pasar a otra persona." />}
+
+        <div className="compra-resumen">
+          <span>Entradas: {moneda(compra.subtotal)}</span>
+          {compra.descuento > 0 && <span>Descuento: −{moneda(compra.descuento)}</span>}
+          {compra.cargo_plataforma > 0 && <span>Cargo de la plataforma: {moneda(compra.cargo_plataforma)}</span>}
+          <strong>Total: {moneda(compra.total)}</strong>
+        </div>
+
+        <div className="grilla-entradas">
+          {compra.entradas.map((e) => <TarjetaEntrada key={e.id_entrada} entrada={e} />)}
+        </div>
+        <Link to={`/b/${compra.subdominio}`}>← Volver a la página de {compra.boliche}</Link>
+      </div>
+    </div>
+  );
+}

@@ -1,4 +1,4 @@
-import { LoginOutlined, LogoutOutlined, ShopOutlined } from "@ant-design/icons";
+import { LoginOutlined, LogoutOutlined, QrcodeOutlined, ShopOutlined } from "@ant-design/icons";
 import { Button, Space } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -23,7 +23,7 @@ export default function BotonesSesion() {
           Mi panel
         </Button>
       )}
-      {esCliente && <span className="muted">{usuario.nombre_completo}</span>}
+      {esCliente && <Button shape="round" icon={<QrcodeOutlined />} onClick={() => navigate("/mis-entradas")}>Mis entradas</Button>}
       {usuario && (
         <Button shape="round" icon={<LogoutOutlined />} onClick={() => { salir(); navigate("/explorar"); }}>
           Salir

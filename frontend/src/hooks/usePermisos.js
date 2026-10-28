@@ -35,5 +35,8 @@ export default function usePermisos() {
     puedeVerEquipo: esSuperadmin || esAdmin || esManager,
     puedeFijarComision: esSuperadmin || esAdmin,
     puedeCrearEventos: esSuperadmin || esAdmin || esManager,
+    // Ventas: confirmar o cancelar pagos (admin y manager); vender en la puerta y controlar los QR (también el RRPP).
+    puedeGestionarPagos: esSuperadmin || esAdmin || esManager,
+    puedeVender: esSuperadmin || esAdmin || esManager || esRrpp,
   };
 }

@@ -8,6 +8,8 @@ import PestanaBebidas from "../components/boliche/PestanaBebidas.jsx";
 import PestanaDiseno from "../components/boliche/PestanaDiseno.jsx";
 import PestanaEntradas from "../components/boliche/PestanaEntradas.jsx";
 import PestanaMesas from "../components/boliche/PestanaMesas.jsx";
+import PestanaPuerta from "../components/boliche/PestanaPuerta.jsx";
+import PestanaVentas from "../components/boliche/PestanaVentas.jsx";
 import Estado from "../components/Estado.jsx";
 import FormModal from "../components/FormModal.jsx";
 import PaginaCrud from "../components/PaginaCrud.jsx";
@@ -380,6 +382,8 @@ export default function BolicheDetalle() {
   const pestanas = [
     { key: "eventos", label: "Eventos", children: <PestanaEventos idBoliche={boliche.id_boliche} /> },
     { key: "entradas", label: "Entradas", children: <PestanaEntradas boliche={boliche} /> },
+    { key: "ventas", label: "Ventas", children: <PestanaVentas idBoliche={boliche.id_boliche} /> },
+    { key: "puerta", label: "Puerta", children: <PestanaPuerta idBoliche={boliche.id_boliche} /> },
     { key: "bebidas", label: "Bebidas", children: <PestanaBebidas idBoliche={boliche.id_boliche} /> },
     { key: "mesas", label: "Mesas VIP", children: <PestanaMesas idBoliche={boliche.id_boliche} /> },
     { key: "diseno", label: "Diseño", children: <PestanaDiseno idBoliche={boliche.id_boliche} /> },

@@ -6,8 +6,10 @@ import { publicoApi } from "../api/plataforma.js";
 import BotonesSesion from "../components/BotonesSesion.jsx";
 import TemaBoliche from "../components/boliche/TemaBoliche.jsx";
 import CabeceraPublica from "../components/CabeceraPublica.jsx";
+import ModalCompra from "../components/ventas/ModalCompra.jsx";
 import { fechaHora, moneda } from "../utils/formato.js";
 
+const hayEntradasDisponibles = (e) => e.entradas.some((t) => t.estado === "disponible");
 const ESTADO_ENTRADA = { disponible: "Disponible", agotada: "Agotada", no_disponible: "No disponible" };
 const ESTADO_MESA = { disponible: "Disponible", reservada: "Reservada" };
 
@@ -33,6 +35,7 @@ export default function PaginaBoliche() {
   const [boliche, setBoliche] = useState(null);
   const [noExiste, setNoExiste] = useState(false);
   const [modo, setModo] = useState("oscuro");
+  const [comprando, setComprando] = useState(null); // el evento cuyas entradas se están comprando
 
   useEffect(() => {
     setBoliche(null);
@@ -151,6 +154,7 @@ export default function PaginaBoliche() {
                             </li>
                           ))}
                         </ul>
+                        {hayEntradasDisponibles(e) && <Button type="primary" shape="round" onClick={() => setComprando(e)}>Comprar entradas</Button>}
                       </div>
                     )}
 
@@ -175,7 +179,7 @@ export default function PaginaBoliche() {
               ))}
             </div>
           )}
-          <p className="bol-aviso">La compra online de entradas y la reserva de mesas llegan pronto. Por ahora podés ver precios y disponibilidad.</p>
+          <p className="bol-aviso">Pagás desde la página por transferencia (precio online). Si no, en la puerta se paga el precio de puerta. La reserva de mesas VIP llega pronto.</p>
         </section>
 
         {boliche.mesas_vip.length > 0 && (
@@ -222,6 +226,8 @@ export default function PaginaBoliche() {
           </section>
         )}
       </main>
+
+      {comprando && <ModalCompra subdominio={boliche.subdominio} evento={comprando} onCerrar={() => setComprando(null)} />}
 
       <footer className="bol-pie">
         <span>{boliche.nombre} · página en NOCTIS</span>

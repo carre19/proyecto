@@ -64,3 +64,28 @@ export const mesasDeEventoApi = {
   listar: (idBoliche, idEvento) => api.get(`/boliches/${idBoliche}/eventos/${idEvento}/mesas-vip`).then((res) => res.data),
   ofrecer: (idBoliche, idEvento, idMesa, datos) => api.put(`/boliches/${idBoliche}/eventos/${idEvento}/mesas-vip/${idMesa}`, datos).then((res) => res.data),
 };
+
+// Compra de entradas (fase 2). Sin cuenta obligatoria: quien tiene el link (token) ve su compra y sus QR.
+export const comprasApi = {
+  comprar: (subdominio, idEvento, datos) => api.post(`/publico/boliches/${subdominio}/eventos/${idEvento}/comprar`, datos).then((res) => res.data),
+  ver: (token) => api.get(`/publico/compras/${token}`).then((res) => res.data),
+  mias: () => api.get("/cliente/compras").then((res) => res.data),
+};
+
+// Ventas del panel: ver, confirmar el pago a mano, cancelar y vender en la puerta.
+export const ventasApi = {
+  listar: (idBoliche, idEvento, estado) => api.get(`/boliches/${idBoliche}/eventos/${idEvento}/ventas`, { params: { estado } }).then((res) => res.data),
+  pagar: (idBoliche, idCompra) => api.put(`/boliches/${idBoliche}/compras/${idCompra}/pagar`).then((res) => res.data),
+  cancelar: (idBoliche, idCompra) => api.put(`/boliches/${idBoliche}/compras/${idCompra}/cancelar`).then((res) => res.data),
+  ventaPuerta: (idBoliche, idEvento, datos) => api.post(`/boliches/${idBoliche}/eventos/${idEvento}/venta-puerta`, datos).then((res) => res.data),
+};
+
+// Control de acceso en la puerta. escanear devuelve 409 con el motivo cuando rechaza una entrada: se lee el cuerpo igual.
+const puerta = (idBoliche, idEvento) => `/boliches/${idBoliche}/eventos/${idEvento}/puerta`;
+export const puertaApi = {
+  escanear: (idBoliche, idEvento, codigo) => api.post(`${puerta(idBoliche, idEvento)}/escanear`, { codigo }, { validateStatus: (s) => s < 500 }).then((res) => ({ estado: res.status, ...res.data })),
+  buscar: (idBoliche, idEvento, dni) => api.post(`${puerta(idBoliche, idEvento)}/buscar`, { dni }).then((res) => res.data),
+  reingreso: (idBoliche, idEvento, idEntrada) => api.post(`${puerta(idBoliche, idEvento)}/reingreso`, { id_entrada: idEntrada }).then((res) => res.data),
+  resumen: (idBoliche, idEvento) => api.get(`${puerta(idBoliche, idEvento)}/resumen`).then((res) => res.data),
+  accesos: (idBoliche, idEvento) => api.get(`${puerta(idBoliche, idEvento)}/accesos`).then((res) => res.data),
+};

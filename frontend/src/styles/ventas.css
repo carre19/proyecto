@@ -1,0 +1,145 @@
+/* Compra de entradas, QR, ventas y puerta (fase 2). */
+
+.form-entradas {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-entradas-tipos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-entradas-tipo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.form-entradas-tipo.apagado {
+  opacity: .6;
+}
+
+.form-entradas-personas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-entradas-fila {
+  row-gap: 6px;
+}
+
+.form-entradas-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.compra h1 {
+  margin: 0;
+}
+
+.compra-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.compra-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.compra-bloque-cabecera {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.grilla-entradas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+}
+
+.tarjeta-entrada {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.tarjeta-entrada.usada {
+  opacity: .75;
+}
+
+.tarjeta-entrada-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.tarjeta-entrada-sin-qr {
+  width: 150px;
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.puerta {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.puerta-resultado {
+  font-size: 18px;
+}
+
+.puerta-camara video {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  background: #000;
+}
+
+@media (max-width: 720px) {
+  .tarjeta-entrada {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .compra-resumen {
+    align-items: flex-start;
+  }
+}
+
+.lista-simple {
+  margin: 0;
+  padding-left: 18px;
+}
