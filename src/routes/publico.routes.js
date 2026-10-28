@@ -3,6 +3,7 @@ import { tokenOpcional } from "../middleware/auth.js";
 import { limitar } from "../middleware/limite.js";
 import { comprar, verCompra } from "../controllers/compra.controller.js";
 import { verTalonarioPublico } from "../controllers/talonario.controller.js";
+import { verMiDescuento } from "../controllers/descuento.controller.js";
 import { listarBoliches, verBoliche } from "../controllers/publico.controller.js";
 
 // Sin cuenta: lo que ve cualquier persona.
@@ -15,6 +16,9 @@ router.get("/boliches/:subdominio", verBoliche);
 // Se limitan los intentos por dirección: sin esto alguien podría reservar todo el cupo con compras falsas.
 router.post("/boliches/:subdominio/eventos/:idEvento/comprar", limitar(Number(process.env.LIMITE_COMPRAS ?? 30), 10 * 60 * 1000), tokenOpcional, comprar);
 router.get("/compras/:token", verCompra);
+
+// El descuento que le corresponde al cliente con sesión en este boliche (para mostrarlo antes de comprar).
+router.get("/boliches/:subdominio/descuento", tokenOpcional, verMiDescuento);
 
 // El link de venta de un RRPP (su talonario): a qué evento lleva y cuántas entradas le quedan.
 router.get("/talonarios/:codigo", verTalonarioPublico);

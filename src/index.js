@@ -9,6 +9,8 @@ import usuarioRoutes from "./routes/usuario.routes.js";
 import clienteRoutes from "./routes/cliente.routes.js";
 import pagoRoutes from "./routes/pago.routes.js";
 import finanzasRoutes from "./routes/finanzas.routes.js";
+import plataformaRoutes from "./routes/plataforma.routes.js";
+import { limpiarDatosVencidos } from "./utils/retencion.js";
 import pool from "./data/db.js";
 import { despacharPendientes } from "./utils/notificaciones.js";
 import { liberarVencidas } from "./utils/compras.js";
@@ -41,6 +43,7 @@ app.use("/api/usuarios", usuarioRoutes);
 app.use("/api/cliente", clienteRoutes);
 app.use("/api/pagos", pagoRoutes);
 app.use("/api/finanzas", finanzasRoutes);
+app.use("/api/plataforma", plataformaRoutes);
 
 app.use((req, res) => {
     res.status(404).json({ mensaje: "Ruta no encontrada" });
@@ -67,4 +70,8 @@ app.listen(PORT, () => {
 if (process.env.TAREAS_AUTO !== "false") {
     setInterval(() => despacharPendientes(pool).catch((e) => console.error("Avisos:", e.message)), 15 * 1000).unref();
     setInterval(() => liberarVencidas(pool).catch((e) => console.error("Vencimientos:", e.message)), 60 * 1000).unref();
+    // Borrado de datos personales vencidos (3 meses sin comprar ni interactuar): una vez por día.
+    const borrarVencidos = () => limpiarDatosVencidos(pool).catch((e) => console.error("Borrado de datos:", e.message));
+    setTimeout(borrarVencidos, 60 * 1000).unref();
+    setInterval(borrarVencidos, 24 * 60 * 60 * 1000).unref();
 }

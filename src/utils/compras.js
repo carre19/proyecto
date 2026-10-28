@@ -76,7 +76,7 @@ export const validarContacto = (body, obligatorio) => {
 //   canal "puerta": precio de puerta, sin cargo.
 // Bloquea las filas de los tipos de entrada para que dos compras a la vez no se pasen del cupo.
 // Lanza {estado, mensaje} si algo no se puede vender.
-export const crearCompra = async (client, { boliche, evento, items, canal, metodo, contacto, idCliente = null, idVendedor = null, idRrpp = null, idTalonario = null, descuento = 0 }) => {
+export const crearCompra = async (client, { boliche, evento, items, canal, metodo, contacto, idCliente = null, idVendedor = null, idRrpp = null, idTalonario = null, descuentoPct = 0, descuentoNombre = null }) => {
     const falla = (estado, mensaje) => Object.assign(new Error(mensaje), { estado, mensaje });
 
     const idsTipos = [...new Set(items.map((i) => i.id_tipo_entrada))].sort((a, b) => a - b);
@@ -99,16 +99,16 @@ export const crearCompra = async (client, { boliche, evento, items, canal, metod
 
     const precioDe = (t) => (canal === "web" ? t.precio_virtual : t.precio_puerta);
     const subtotal = items.reduce((total, i) => total + precioDe(porId.get(i.id_tipo_entrada)), 0);
-    const descuentoAplicado = Math.min(descuento, subtotal);
+    const descuentoAplicado = Math.min(Math.floor((subtotal * descuentoPct) / 100), subtotal);
     const cargo = canal === "web" ? cargoPlataforma(subtotal - descuentoAplicado) : 0;
 
     const compra = (await client.query(`
         INSERT INTO compra (id_boliche, id_evento, id_cliente, token_publico, referencia, canal, metodo_pago, id_vendedor, id_rrpp,
-                            subtotal, descuento, cargo_plataforma, total, contacto_email, contacto_telefono, vence_en, id_talonario)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CASE WHEN $16::int IS NOT NULL THEN now() + make_interval(mins => $16::int) END, $17)
+                            subtotal, descuento, cargo_plataforma, total, contacto_email, contacto_telefono, vence_en, id_talonario, descuento_nombre)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CASE WHEN $16::int IS NOT NULL THEN now() + make_interval(mins => $16::int) END, $17, $18)
         RETURNING *`,
         [boliche.id_boliche, evento.id_evento, idCliente, nuevoToken(), nuevaReferencia(), canal, metodo, idVendedor, idRrpp,
-         subtotal, descuentoAplicado, cargo, subtotal - descuentoAplicado + cargo, contacto.email, contacto.telefono, canal === "web" ? MINUTOS_RESERVA : null, idTalonario])).rows[0];
+         subtotal, descuentoAplicado, cargo, subtotal - descuentoAplicado + cargo, contacto.email, contacto.telefono, canal === "web" ? MINUTOS_RESERVA : null, idTalonario, descuentoAplicado > 0 ? descuentoNombre : null])).rows[0];
 
     for (const i of items) {
         await client.query(`

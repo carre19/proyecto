@@ -1,6 +1,7 @@
 import pool from "../data/db.js";
 import { crearCompra, entradasDe, liberarVencidas, sincronizarAgotadas, validarContacto, validarItems } from "../utils/compras.js";
 import { parseId } from "../utils/validaciones.js";
+import { descuentoPara } from "./descuento.controller.js";
 import { responderErrorDeBase } from "../utils/usuarios.js";
 
 // Compra de entradas desde la página pública (sin cuenta obligatoria) y consulta de la compra con su QR.
@@ -15,6 +16,7 @@ export const datosCompra = (c, entradas) => ({
     metodo_pago: c.metodo_pago,
     subtotal: c.subtotal,
     descuento: c.descuento,
+    descuento_nombre: c.descuento_nombre,
     cargo_plataforma: c.cargo_plataforma,
     total: c.total,
     vence_en: c.vence_en,
@@ -73,10 +75,13 @@ export const comprar = async (req, res) => {
                 return res.status(409).json({ mensaje: talonario.cantidad - usadas <= 0 ? "a este link de venta se le acabaron las entradas asignadas" : `a este link de venta le quedan ${talonario.cantidad - usadas} entradas` });
             }
         }
+        // El cliente con cuenta recibe el descuento que le corresponda por la antigüedad de su cuenta.
+        const descuento = req.usuario?.rol === "cliente" ? await descuentoPara(cliente, evento.id_boliche, req.usuario.id) : null;
         const compra = await crearCompra(cliente, {
             boliche: evento, evento, items, canal: "web", metodo: "transferencia", contacto,
             idCliente: req.usuario?.rol === "cliente" ? req.usuario.id : null,
             idRrpp: talonario?.id_rrpp ?? null, idTalonario: talonario?.id_talonario ?? null,
+            descuentoPct: Number(descuento?.porcentaje ?? 0), descuentoNombre: descuento?.nombre ?? null,
         });
         await sincronizarAgotadas(cliente, evento.id_boliche, evento.id_evento);
         await cliente.query("COMMIT");

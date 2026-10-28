@@ -13,6 +13,7 @@ import { buscarPorDni, escanear, ingresarInvitado, reingreso, resumenPuerta, ult
 import { crearTalonario, editarTalonario, eliminarTalonario, listarTalonarios } from "../controllers/talonario.controller.js";
 import { agregarInvitado, crearLista, editarInvitado, editarLista, eliminarLista, listarListas, quitarInvitado } from "../controllers/lista.controller.js";
 import { misVentas, ranking, resultados } from "../controllers/rrpp.controller.js";
+import { crearDescuento, editarDescuento, eliminarDescuento, listarDescuentos } from "../controllers/descuento.controller.js";
 import { agregarContacto, asignarPersonal, crearPersonal, editarPersonal, eliminarPersonal, fijarDotacion, listarPersonal, personalDelEvento, quitarContacto, quitarDelEvento, verPersonal } from "../controllers/personal.controller.js";
 import { crearProveedor, editarProveedor, eliminarProveedor, finanzasDelBoliche, finanzasDelEvento, gastos, ingresos, listarProveedores } from "../controllers/finanzas.controller.js";
 import { crearMiembro, darDeBaja, editarMiembro, listarEquipo } from "../controllers/equipo.controller.js";
@@ -144,6 +145,12 @@ for (const [ruta, mov] of [["gastos", gastos], ["ingresos", ingresos]]) {
 }
 delBoliche.get("/eventos/:idEvento/finanzas", edita, finanzasDelEvento);
 delBoliche.get("/finanzas", edita, finanzasDelBoliche);
+
+// Descuentos para clientes con cuenta (fase 6): los define el admin.
+delBoliche.get("/descuentos", edita, listarDescuentos);
+delBoliche.post("/descuentos", edita, crearDescuento);
+delBoliche.put("/descuentos/:idDescuento", edita, editarDescuento);
+delBoliche.delete("/descuentos/:idDescuento", edita, eliminarDescuento);
 
 // Pagos (fase 3): la cuenta donde se cobra, los pagos (en especial los que hay que revisar) y los avisos enviados.
 // Los gestionan el superadmin, el admin y el manager; solo el admin y el superadmin cambian la cuenta de cobro.

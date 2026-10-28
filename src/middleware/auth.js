@@ -33,6 +33,13 @@ const autenticar = async (req, res, next, obligatorio) => {
     return res.status(401).json({ mensaje: "Token inválido" });
   }
 
+  // El ticket del segundo paso solo sirve para completar el login (/auth/2fa/verificar), nunca como sesión.
+  if (datos.tipo === "2fa") return res.status(401).json({ mensaje: "Token inválido" });
+  // Un admin que todavía no activó la verificación en dos pasos (cuando es obligatoria) solo puede usar las rutas de /auth.
+  if (datos.enrolar && req.baseUrl !== "/api/auth") {
+    return res.status(403).json({ mensaje: "Para seguir tenés que activar la verificación en dos pasos", requiere_2fa: true });
+  }
+
   try {
     const resultado = await pool.query(`
       SELECT u.id_usuario AS id, u.email, u.nombre, u.apellido, u.nombre_completo, u.rol, u.activo,
