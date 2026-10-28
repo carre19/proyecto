@@ -86,6 +86,7 @@ export const puertaApi = {
   escanear: (idBoliche, idEvento, codigo) => api.post(`${puerta(idBoliche, idEvento)}/escanear`, { codigo }, { validateStatus: (s) => s < 500 }).then((res) => ({ estado: res.status, ...res.data })),
   buscar: (idBoliche, idEvento, dni) => api.post(`${puerta(idBoliche, idEvento)}/buscar`, { dni }).then((res) => res.data),
   reingreso: (idBoliche, idEvento, idEntrada) => api.post(`${puerta(idBoliche, idEvento)}/reingreso`, { id_entrada: idEntrada }).then((res) => res.data),
+  ingresarInvitado: (idBoliche, idEvento, idInvitado) => api.post(`${puerta(idBoliche, idEvento)}/invitado`, { id_invitado: idInvitado }).then((res) => res.data),
   resumen: (idBoliche, idEvento) => api.get(`${puerta(idBoliche, idEvento)}/resumen`).then((res) => res.data),
   accesos: (idBoliche, idEvento) => api.get(`${puerta(idBoliche, idEvento)}/accesos`).then((res) => res.data),
 };
@@ -98,4 +99,17 @@ export const pagosApi = {
   resolver: (idBoliche, idPago, detalle) => api.put(`/boliches/${idBoliche}/pagos/${idPago}/resolver`, { detalle }).then((res) => res.data),
   reactivar: (idBoliche, idPago) => api.put(`/boliches/${idBoliche}/pagos/${idPago}/reactivar`).then((res) => res.data),
   avisos: (idBoliche) => api.get(`/boliches/${idBoliche}/notificaciones`).then((res) => res.data),
+};
+
+// RRPP (fase 4): el link de venta de cada uno, sus listas de invitados, y los resultados y el ranking.
+export const rrppApi = {
+  linkPublico: (codigo) => api.get(`/publico/talonarios/${codigo}`).then((res) => res.data),
+  listas: (idBoliche, idEvento) => api.get(`/boliches/${idBoliche}/eventos/${idEvento}/listas`).then((res) => res.data),
+  crearLista: (idBoliche, idEvento, nombre) => api.post(`/boliches/${idBoliche}/eventos/${idEvento}/listas`, { nombre }).then((res) => res.data),
+  eliminarLista: (idBoliche, idEvento, idLista) => api.delete(`/boliches/${idBoliche}/eventos/${idEvento}/listas/${idLista}`).then((res) => res.data),
+  agregarInvitado: (idBoliche, idEvento, idLista, datos) => api.post(`/boliches/${idBoliche}/eventos/${idEvento}/listas/${idLista}/invitados`, datos).then((res) => res.data),
+  quitarInvitado: (idBoliche, idEvento, idLista, idInvitado) => api.delete(`/boliches/${idBoliche}/eventos/${idEvento}/listas/${idLista}/invitados/${idInvitado}`).then((res) => res.data),
+  resultados: (idBoliche, idEvento) => api.get(`/boliches/${idBoliche}/rrpp/resultados`, { params: { evento: idEvento } }).then((res) => res.data),
+  ranking: (idBoliche, idEvento) => api.get(`/boliches/${idBoliche}/rrpp/ranking`, { params: { evento: idEvento } }).then((res) => res.data),
+  misVentas: (idBoliche, idEvento, idRrpp) => api.get(`/boliches/${idBoliche}/rrpp/mis-ventas`, { params: { evento: idEvento, id_rrpp: idRrpp } }).then((res) => res.data),
 };

@@ -6,7 +6,7 @@ import { mensajeError } from "../../services/api.js";
 import { fechaHora } from "../../utils/formato.js";
 import SelectorEvento from "./SelectorEvento.jsx";
 
-const RESULTADO = { ingreso: "Ingreso", reingreso: "Reingreso", rechazada_usada: "Rechazada: ya usada", rechazada_no_pagada: "Rechazada: sin pagar", rechazada_anulada: "Rechazada: anulada", rechazada_otro_evento: "Rechazada: otro evento", no_encontrada: "No encontrada" };
+const RESULTADO = { ingreso_lista: "Ingreso por lista",  ingreso: "Ingreso", reingreso: "Reingreso", rechazada_usada: "Rechazada: ya usada", rechazada_no_pagada: "Rechazada: sin pagar", rechazada_anulada: "Rechazada: anulada", rechazada_otro_evento: "Rechazada: otro evento", no_encontrada: "No encontrada" };
 
 // Cámara del celular para leer el QR (solo en navegadores que lo permiten, como Chrome en Android).
 // En otros casos sirve igual un lector de QR conectado (escribe el código como un teclado) o pegar el código a mano.
@@ -96,6 +96,16 @@ export default function PestanaPuerta({ idBoliche }) {
       message.error(mensajeError(e, "No se pudo buscar"));
     }
   };
+  const dejarEntrar = async (id) => {
+    try {
+      await puertaApi.ingresarInvitado(idBoliche, evento.id_evento, id);
+      message.success("Ingreso registrado");
+      setEncontradas(await puertaApi.buscar(idBoliche, evento.id_evento, dni));
+      recargar();
+    } catch (e) {
+      message.error(mensajeError(e, "No se pudo registrar el ingreso"));
+    }
+  };
   const reingresar = async (id) => {
     try {
       await puertaApi.reingreso(idBoliche, evento.id_evento, id);
@@ -129,6 +139,7 @@ export default function PestanaPuerta({ idBoliche }) {
           <Col xs={12} md={6}><Card variant="borderless"><Statistic title="Ya entraron" value={resumen.ingresaron} /></Card></Col>
           <Col xs={12} md={6}><Card variant="borderless"><Statistic title="Faltan entrar" value={resumen.faltan} /></Card></Col>
           <Col xs={12} md={6}><Card variant="borderless"><Statistic title="Sin pagar" value={resumen.pendientes_de_pago} /></Card></Col>
+          {resumen.invitados > 0 && <Col xs={24}><Card variant="borderless"><Statistic title="Invitados de lista que ya entraron" value={`${resumen.invitados_ingresaron} de ${resumen.invitados}`} /></Card></Col>}
         </Row>
       )}
 
@@ -164,10 +175,11 @@ export default function PestanaPuerta({ idBoliche }) {
                 <Input.Search size="large" inputMode="numeric" placeholder="DNI de la persona (sin puntos)" value={dni} onChange={(e) => setDni(e.target.value)} onSearch={buscar} enterButton="Buscar" disabled={!evento} />
                 {encontradas?.length === 0 && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Ese DNI no tiene entradas para este evento." />}
                 {encontradas?.map((e) => (
-                  <Card key={e.id_entrada} size="small" variant="borderless">
+                  <Card key={e.id_entrada ?? `i${e.id_invitado}`} size="small" variant="borderless">
                     <Space wrap style={{ width: "100%", justifyContent: "space-between" }}>
                       <span>{e.nombre} {e.apellido} · DNI {e.dni} · {e.tipo} <Tag>{e.estado}</Tag></span>
-                      {e.estado === "usada" && <Button onClick={() => reingresar(e.id_entrada)}>Registrar reingreso (DNI verificado)</Button>}
+                      {e.origen === "lista" && e.estado === "en_lista" && <Button type="primary" onClick={() => dejarEntrar(e.id_invitado)}>Dejar entrar (lista)</Button>}
+                      {e.origen !== "lista" && e.estado === "usada" && <Button onClick={() => reingresar(e.id_entrada)}>Registrar reingreso (DNI verificado)</Button>}
                     </Space>
                   </Card>
                 ))}

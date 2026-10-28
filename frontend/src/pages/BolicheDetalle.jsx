@@ -8,13 +8,15 @@ import PestanaBebidas from "../components/boliche/PestanaBebidas.jsx";
 import PestanaDiseno from "../components/boliche/PestanaDiseno.jsx";
 import PestanaEntradas from "../components/boliche/PestanaEntradas.jsx";
 import PestanaMesas from "../components/boliche/PestanaMesas.jsx";
+import PestanaListas from "../components/boliche/PestanaListas.jsx";
+import PestanaResultados from "../components/boliche/PestanaResultados.jsx";
+import PestanaTalonarios from "../components/boliche/PestanaTalonarios.jsx";
 import PestanaPagos from "../components/boliche/PestanaPagos.jsx";
 import PestanaPuerta from "../components/boliche/PestanaPuerta.jsx";
 import PestanaVentas from "../components/boliche/PestanaVentas.jsx";
 import Estado from "../components/Estado.jsx";
 import FormModal from "../components/FormModal.jsx";
 import PaginaCrud from "../components/PaginaCrud.jsx";
-import Proximamente from "../components/Proximamente.jsx";
 import SubirImagen from "../components/SubirImagen.jsx";
 import Topbar from "../components/Topbar.jsx";
 import usePermisos from "../hooks/usePermisos.js";
@@ -343,7 +345,8 @@ export default function BolicheDetalle() {
   const permisos = usePermisos();
   const [boliche, setBoliche] = useState(null);
   const [error, setError] = useState(null);
-  const [tab, setTab] = useState("eventos");
+  // El manager y el RRPP arrancan en sus resultados (su pantalla principal); el resto, en los eventos.
+  const [tab, setTab] = useState(permisos.esManager || permisos.esRrpp ? "resultados" : "eventos");
 
   const cargar = useCallback(async () => {
     try {
@@ -383,6 +386,9 @@ export default function BolicheDetalle() {
   const pestanas = [
     { key: "eventos", label: "Eventos", children: <PestanaEventos idBoliche={boliche.id_boliche} /> },
     { key: "entradas", label: "Entradas", children: <PestanaEntradas boliche={boliche} /> },
+    { key: "resultados", label: "Resultados RRPP", children: <PestanaResultados idBoliche={boliche.id_boliche} /> },
+    { key: "talonarios", label: "Talonarios", children: <PestanaTalonarios idBoliche={boliche.id_boliche} /> },
+    { key: "listas", label: "Listas", children: <PestanaListas idBoliche={boliche.id_boliche} /> },
     { key: "ventas", label: "Ventas", children: <PestanaVentas idBoliche={boliche.id_boliche} /> },
     ...(permisos.puedeGestionarPagos ? [{ key: "pagos", label: "Pagos", children: <PestanaPagos idBoliche={boliche.id_boliche} /> }] : []),
     { key: "puerta", label: "Puerta", children: <PestanaPuerta idBoliche={boliche.id_boliche} /> },
@@ -392,6 +398,11 @@ export default function BolicheDetalle() {
     ...(permisos.puedeVerEquipo ? [{ key: "equipo", label: "Equipo", children: <PestanaEquipo idBoliche={boliche.id_boliche} /> }] : []),
     { key: "datos", label: "Datos del local", children: <PestanaDatos boliche={boliche} recargar={cargar} /> },
   ];
+  // Al manager y al RRPP se les muestra primero lo que usan todos los días (su pantalla principal).
+  if (permisos.esManager || permisos.esRrpp) {
+    const primero = ["resultados", "talonarios", "listas", "ventas", "puerta"];
+    pestanas.sort((x, y) => (primero.includes(y.key) ? 1 : 0) - (primero.includes(x.key) ? 1 : 0) || primero.indexOf(x.key) - primero.indexOf(y.key));
+  }
   const puedeVolver = permisos.esSuperadmin || permisos.esAdmin;
 
   return (
@@ -417,19 +428,6 @@ export default function BolicheDetalle() {
       </div>
 
       {!boliche.activo && <Alert type="warning" showIcon title="Este boliche está desactivado: no se ve en la página pública." />}
-
-      {/* Lo de la pantalla principal del manager y del RRPP que llega en la fase 4. */}
-      {permisos.esManager && (
-        <Proximamente items={[{ titulo: "Resultados de ventas por RRPP", texto: "Entradas asignadas y vendidas por cada RRPP, y el ranking.", fase: 4 }]} />
-      )}
-      {permisos.esRrpp && (
-        <Proximamente
-          items={[
-            { titulo: "Tus ventas y tu comisión", texto: "Lo que vendiste y lo que ganaste.", fase: 4 },
-            { titulo: "Tus listas de invitados", texto: "Armá tus listas y controlá el QR en la puerta.", fase: 4 },
-          ]}
-        />
-      )}
 
       <Tabs activeKey={tab} onChange={setTab} items={pestanas} />
     </main>

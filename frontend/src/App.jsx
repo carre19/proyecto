@@ -10,6 +10,7 @@ import Splash from "./components/Splash.jsx";
 const Boliches = lazy(() => import("./pages/Boliches.jsx"));
 const Explorar = lazy(() => import("./pages/Explorar.jsx"));
 const PaginaBoliche = lazy(() => import("./pages/PaginaBoliche.jsx"));
+const PaginaTalonario = lazy(() => import("./pages/PaginaTalonario.jsx"));
 const Compra = lazy(() => import("./pages/Compra.jsx"));
 const MisEntradas = lazy(() => import("./pages/MisEntradas.jsx"));
 const BolicheDetalle = lazy(() => import("./pages/BolicheDetalle.jsx"));
@@ -17,7 +18,7 @@ const Usuarios = lazy(() => import("./pages/Usuarios.jsx"));
 
 // Mapa de rutas de toda la app.
 //   Públicas:  /  /login  /registro  /explorar (lista de boliches)  /b/:subdominio (página de un boliche)
-//              /compra/:token (una compra con sus QR, sin cuenta)  /mis-entradas (cliente con sesión)
+//              /t/:codigo (el link de venta de un RRPP)  /compra/:token (una compra con sus QR, sin cuenta)  /mis-entradas (cliente con sesión)
 //   Privadas:  /boliches (superadmin y admin) · /boliches/:id (ficha: todos los del boliche) · /usuarios (superadmin)
 //              Van dentro de RutaProtegida (exige sesión y rol) y de Layout (sidebar + barra móvil).
 //   Cualquier otra URL vuelve a la landing.
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/registro" element={<Acceso modo="registro" />} />
           <Route path="/explorar" element={<Explorar />} />
           <Route path="/b/:subdominio" element={<PaginaBoliche />} />
+          <Route path="/t/:codigo" element={<PaginaTalonario />} />
           <Route path="/compra/:token" element={<Compra />} />
           <Route path="/mis-entradas" element={<RutaProtegida roles={["cliente"]}><MisEntradas /></RutaProtegida>} />
 

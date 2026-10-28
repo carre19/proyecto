@@ -1,8 +1,8 @@
 import { ArrowLeftOutlined, EnvironmentOutlined, InstagramOutlined, MoonOutlined, SunOutlined, TeamOutlined, WhatsAppOutlined } from "@ant-design/icons";
 import { Button, Empty, Image, Result, Skeleton, Space } from "antd";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { publicoApi } from "../api/plataforma.js";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { publicoApi, rrppApi } from "../api/plataforma.js";
 import BotonesSesion from "../components/BotonesSesion.jsx";
 import TemaBoliche from "../components/boliche/TemaBoliche.jsx";
 import CabeceraPublica from "../components/CabeceraPublica.jsx";
@@ -35,6 +35,8 @@ export default function PaginaBoliche() {
   const [boliche, setBoliche] = useState(null);
   const [noExiste, setNoExiste] = useState(false);
   const [modo, setModo] = useState("oscuro");
+  const [params] = useSearchParams();
+  const [vendedor, setVendedor] = useState(null); // el RRPP de cuyo link se llegó, si hay
   const [comprando, setComprando] = useState(null); // el evento cuyas entradas se están comprando
 
   useEffect(() => {
@@ -43,6 +45,13 @@ export default function PaginaBoliche() {
     setModo("oscuro");
     publicoApi.boliche(subdominio).then(setBoliche).catch(() => setNoExiste(true));
   }, [subdominio]);
+
+  // Si se llegó con el link de un RRPP (?rrpp=CODIGO), las compras se le adjudican.
+  useEffect(() => {
+    const codigo = params.get("rrpp");
+    setVendedor(null);
+    if (codigo) rrppApi.linkPublico(codigo).then((v) => v.activo && v.subdominio === subdominio && setVendedor(v)).catch(() => {});
+  }, [params, subdominio]);
 
   const carta = useMemo(() => agruparPorCategoria(boliche?.bebidas ?? []), [boliche]);
 
@@ -106,6 +115,8 @@ export default function PaginaBoliche() {
           </Space>
         </div>
       </section>
+
+      {vendedor && <div className="bol-vendedor">Estás comprando con el link de <strong>{vendedor.rrpp}</strong></div>}
 
       <main className="bol-cuerpo">
         {galeria.length > 0 && (
@@ -227,7 +238,7 @@ export default function PaginaBoliche() {
         )}
       </main>
 
-      {comprando && <ModalCompra subdominio={boliche.subdominio} evento={comprando} onCerrar={() => setComprando(null)} />}
+      {comprando && <ModalCompra subdominio={boliche.subdominio} evento={comprando} talonario={vendedor?.codigo} onCerrar={() => setComprando(null)} />}
 
       <footer className="bol-pie">
         <span>{boliche.nombre} · página en NOCTIS</span>
