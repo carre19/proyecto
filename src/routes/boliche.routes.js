@@ -13,6 +13,8 @@ import { buscarPorDni, escanear, ingresarInvitado, reingreso, resumenPuerta, ult
 import { crearTalonario, editarTalonario, eliminarTalonario, listarTalonarios } from "../controllers/talonario.controller.js";
 import { agregarInvitado, crearLista, editarInvitado, editarLista, eliminarLista, listarListas, quitarInvitado } from "../controllers/lista.controller.js";
 import { misVentas, ranking, resultados } from "../controllers/rrpp.controller.js";
+import { agregarContacto, asignarPersonal, crearPersonal, editarPersonal, eliminarPersonal, fijarDotacion, listarPersonal, personalDelEvento, quitarContacto, quitarDelEvento, verPersonal } from "../controllers/personal.controller.js";
+import { crearProveedor, editarProveedor, eliminarProveedor, finanzasDelBoliche, finanzasDelEvento, gastos, ingresos, listarProveedores } from "../controllers/finanzas.controller.js";
 import { crearMiembro, darDeBaja, editarMiembro, listarEquipo } from "../controllers/equipo.controller.js";
 import { borrarImagenEvento, crearEvento, editarEvento, eliminarEvento, listarEventos, subirImagenEvento, verEvento } from "../controllers/evento.controller.js";
 
@@ -117,6 +119,31 @@ delBoliche.post("/eventos/:idEvento/puerta/invitado", equipoCompleto, ingresarIn
 delBoliche.get("/rrpp/resultados", equipoCompleto, resultados);
 delBoliche.get("/rrpp/ranking", equipoCompleto, ranking);
 delBoliche.get("/rrpp/mis-ventas", equipoCompleto, misVentas);
+
+// Personal externo, proveedores, gastos e ingresos (fase 5): los gestiona el admin (y el superadmin); el manager y el RRPP no los ven.
+delBoliche.get("/personal", edita, listarPersonal);
+delBoliche.post("/personal", edita, crearPersonal);
+delBoliche.get("/personal/:idPersonal", edita, verPersonal);
+delBoliche.put("/personal/:idPersonal", edita, editarPersonal);
+delBoliche.delete("/personal/:idPersonal", edita, eliminarPersonal);
+delBoliche.post("/personal/:idPersonal/contactos", edita, agregarContacto);
+delBoliche.delete("/personal/:idPersonal/contactos/:idContacto", edita, quitarContacto);
+delBoliche.get("/eventos/:idEvento/personal", edita, personalDelEvento);
+delBoliche.put("/eventos/:idEvento/personal/:idPersonal", edita, asignarPersonal);
+delBoliche.delete("/eventos/:idEvento/personal/:idPersonal", edita, quitarDelEvento);
+delBoliche.put("/eventos/:idEvento/dotacion", edita, fijarDotacion);
+delBoliche.get("/proveedores", edita, listarProveedores);
+delBoliche.post("/proveedores", edita, crearProveedor);
+delBoliche.put("/proveedores/:idProveedor", edita, editarProveedor);
+delBoliche.delete("/proveedores/:idProveedor", edita, eliminarProveedor);
+for (const [ruta, mov] of [["gastos", gastos], ["ingresos", ingresos]]) {
+    delBoliche.get(`/${ruta}`, edita, mov.listar);
+    delBoliche.post(`/${ruta}`, edita, mov.crear);
+    delBoliche.put(`/${ruta}/:idMovimiento`, edita, mov.editar);
+    delBoliche.delete(`/${ruta}/:idMovimiento`, edita, mov.eliminar);
+}
+delBoliche.get("/eventos/:idEvento/finanzas", edita, finanzasDelEvento);
+delBoliche.get("/finanzas", edita, finanzasDelBoliche);
 
 // Pagos (fase 3): la cuenta donde se cobra, los pagos (en especial los que hay que revisar) y los avisos enviados.
 // Los gestionan el superadmin, el admin y el manager; solo el admin y el superadmin cambian la cuenta de cobro.

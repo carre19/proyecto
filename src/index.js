@@ -8,6 +8,7 @@ import bolicheRoutes from "./routes/boliche.routes.js";
 import usuarioRoutes from "./routes/usuario.routes.js";
 import clienteRoutes from "./routes/cliente.routes.js";
 import pagoRoutes from "./routes/pago.routes.js";
+import finanzasRoutes from "./routes/finanzas.routes.js";
 import pool from "./data/db.js";
 import { despacharPendientes } from "./utils/notificaciones.js";
 import { liberarVencidas } from "./utils/compras.js";
@@ -39,6 +40,7 @@ app.use("/api/boliches", bolicheRoutes);
 app.use("/api/usuarios", usuarioRoutes);
 app.use("/api/cliente", clienteRoutes);
 app.use("/api/pagos", pagoRoutes);
+app.use("/api/finanzas", finanzasRoutes);
 
 app.use((req, res) => {
     res.status(404).json({ mensaje: "Ruta no encontrada" });
