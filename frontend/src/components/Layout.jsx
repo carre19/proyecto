@@ -1,4 +1,4 @@
-import { LogoutOutlined, ShopOutlined, TeamOutlined } from "@ant-design/icons";
+import { DollarOutlined, LogoutOutlined, ShopOutlined, TeamOutlined } from "@ant-design/icons";
 import { Avatar, Button, Dropdown, Menu, Result, Tooltip } from "antd";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -13,10 +13,14 @@ export const seccionesDe = (usuario) => {
     case "superadmin":
       return [
         { to: "/boliches", label: "Boliches", icono: <ShopOutlined /> },
+        { to: "/finanzas", label: "Finanzas", icono: <DollarOutlined /> },
         { to: "/usuarios", label: "Usuarios", icono: <TeamOutlined /> },
       ];
     case "admin":
-      return [{ to: "/boliches", label: "Mis boliches", icono: <ShopOutlined /> }];
+      return [
+        { to: "/boliches", label: "Mis boliches", icono: <ShopOutlined /> },
+        { to: "/finanzas", label: "Finanzas", icono: <DollarOutlined /> },
+      ];
     case "rrpp_manager":
     case "rrpp":
       return usuario.boliches?.length ? [{ to: inicioDe(usuario), label: "Mi boliche", icono: <ShopOutlined /> }] : [];

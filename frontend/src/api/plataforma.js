@@ -113,3 +113,25 @@ export const rrppApi = {
   ranking: (idBoliche, idEvento) => api.get(`/boliches/${idBoliche}/rrpp/ranking`, { params: { evento: idEvento } }).then((res) => res.data),
   misVentas: (idBoliche, idEvento, idRrpp) => api.get(`/boliches/${idBoliche}/rrpp/mis-ventas`, { params: { evento: idEvento, id_rrpp: idRrpp } }).then((res) => res.data),
 };
+
+// Personal externo, proveedores, gastos, ingresos y resúmenes (fase 5): los gestiona el admin.
+export const personalApi = {
+  ficha: (idBoliche, idPersonal) => api.get(`/boliches/${idBoliche}/personal/${idPersonal}`).then((res) => res.data),
+  agregarContacto: (idBoliche, idPersonal, datos) => api.post(`/boliches/${idBoliche}/personal/${idPersonal}/contactos`, datos).then((res) => res.data),
+  quitarContacto: (idBoliche, idPersonal, idContacto) => api.delete(`/boliches/${idBoliche}/personal/${idPersonal}/contactos/${idContacto}`).then((res) => res.data),
+  delEvento: (idBoliche, idEvento) => api.get(`/boliches/${idBoliche}/eventos/${idEvento}/personal`).then((res) => res.data),
+  asignar: (idBoliche, idEvento, idPersonal, datos) => api.put(`/boliches/${idBoliche}/eventos/${idEvento}/personal/${idPersonal}`, datos).then((res) => res.data),
+  quitarDelEvento: (idBoliche, idEvento, idPersonal) => api.delete(`/boliches/${idBoliche}/eventos/${idEvento}/personal/${idPersonal}`).then((res) => res.data),
+  fijarDotacion: (idBoliche, idEvento, datos) => api.put(`/boliches/${idBoliche}/eventos/${idEvento}/dotacion`, datos).then((res) => res.data),
+};
+
+// Gastos e ingresos devuelven { total, items }: se adapta a la forma de crearApi (lista) para usarlos con PaginaCrud.
+export const movimientosApi = (idBoliche, recurso) => ({
+  ...apiDeBoliche(idBoliche, recurso),
+  obtenerTodos: () => api.get(`/boliches/${idBoliche}/${recurso}`).then((res) => res.data.items),
+});
+
+export const finanzasApi = {
+  delBoliche: (idBoliche, desde, hasta) => api.get(`/boliches/${idBoliche}/finanzas`, { params: { desde, hasta } }).then((res) => res.data),
+  general: (desde, hasta) => api.get("/finanzas", { params: { desde, hasta } }).then((res) => res.data),
+};

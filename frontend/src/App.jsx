@@ -14,6 +14,7 @@ const PaginaTalonario = lazy(() => import("./pages/PaginaTalonario.jsx"));
 const Compra = lazy(() => import("./pages/Compra.jsx"));
 const MisEntradas = lazy(() => import("./pages/MisEntradas.jsx"));
 const BolicheDetalle = lazy(() => import("./pages/BolicheDetalle.jsx"));
+const Finanzas = lazy(() => import("./pages/Finanzas.jsx"));
 const Usuarios = lazy(() => import("./pages/Usuarios.jsx"));
 
 // Mapa de rutas de toda la app.
@@ -47,6 +48,7 @@ export default function App() {
           >
             <Route path="/boliches" element={<RutaProtegida roles={["superadmin", "admin"]}><Boliches /></RutaProtegida>} />
             <Route path="/boliches/:id" element={<BolicheDetalle />} />
+            <Route path="/finanzas" element={<RutaProtegida roles={["superadmin", "admin"]}><Finanzas /></RutaProtegida>} />
             <Route path="/usuarios" element={<RutaProtegida roles={["superadmin"]}><Usuarios /></RutaProtegida>} />
           </Route>
 

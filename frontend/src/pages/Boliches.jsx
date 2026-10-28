@@ -93,7 +93,7 @@ export default function Boliches() {
         });
       },
       // Lo de las pantallas principales que llegan en otras fases (Notion: ingresos y gastos, ranking, cobros).
-      pie: (
+      pie: permisos.esSuperadmin && (
         <Proximamente
           items={
             permisos.esSuperadmin
