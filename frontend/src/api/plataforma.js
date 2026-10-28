@@ -12,7 +12,11 @@ export const bolichesApi = {
 };
 
 // Usuarios de todo el sistema (solo el superadmin).
-export const usuariosApi = crearApi("/usuarios");
+export const usuariosApi = {
+  ...crearApi("/usuarios"),
+  // Si un admin pierde el celular y los códigos de recuperación, el superadmin le restablece la verificación en dos pasos.
+  resetear2fa: (idUsuario) => api.delete(`/usuarios/${idUsuario}/2fa`).then((res) => res.data),
+};
 
 // Recursos que cuelgan de un boliche: "eventos", "equipo", "bebidas", "mesas-vip" o "eventos/:id/entradas". Tiene la misma forma que crearApi, así sirve con PaginaCrud.
 export const apiDeBoliche = (idBoliche, recurso) => {
@@ -134,4 +138,15 @@ export const movimientosApi = (idBoliche, recurso) => ({
 export const finanzasApi = {
   delBoliche: (idBoliche, desde, hasta) => api.get(`/boliches/${idBoliche}/finanzas`, { params: { desde, hasta } }).then((res) => res.data),
   general: (desde, hasta) => api.get("/finanzas", { params: { desde, hasta } }).then((res) => res.data),
+};
+
+// Descuentos para clientes con cuenta (fase 6) y lo que maneja el superadmin de la plataforma.
+export const descuentoClienteApi = (subdominio) => api.get(`/publico/boliches/${subdominio}/descuento`).then((res) => res.data.descuento);
+
+export const plataformaApi = {
+  resumen: () => api.get("/plataforma/resumen").then((res) => res.data),
+  cobros: (estado) => api.get("/plataforma/cobros", { params: { estado } }).then((res) => res.data),
+  generarCobros: (periodo) => api.post("/plataforma/cobros/generar", { periodo }).then((res) => res.data),
+  pagarCobro: (idCobro, nota) => api.put(`/plataforma/cobros/${idCobro}/pagar`, { nota }).then((res) => res.data),
+  ejecutarBorrado: () => api.post("/plataforma/retencion/ejecutar").then((res) => res.data),
 };

@@ -11,6 +11,7 @@ import PestanaMesas from "../components/boliche/PestanaMesas.jsx";
 import PestanaListas from "../components/boliche/PestanaListas.jsx";
 import PestanaResultados from "../components/boliche/PestanaResultados.jsx";
 import PestanaTalonarios from "../components/boliche/PestanaTalonarios.jsx";
+import PestanaDescuentos from "../components/boliche/PestanaDescuentos.jsx";
 import PestanaFinanzas from "../components/boliche/PestanaFinanzas.jsx";
 import PestanaPersonal from "../components/boliche/PestanaPersonal.jsx";
 import PestanaProveedores from "../components/boliche/PestanaProveedores.jsx";
@@ -397,6 +398,7 @@ export default function BolicheDetalle() {
     { key: "puerta", label: "Puerta", children: <PestanaPuerta idBoliche={boliche.id_boliche} /> },
     ...(permisos.puedeEditarLocal ? [
       { key: "personal", label: "Personal", children: <PestanaPersonal idBoliche={boliche.id_boliche} /> },
+      { key: "descuentos", label: "Descuentos", children: <PestanaDescuentos idBoliche={boliche.id_boliche} /> },
       { key: "proveedores", label: "Proveedores", children: <PestanaProveedores idBoliche={boliche.id_boliche} /> },
       { key: "finanzas", label: "Ingresos y gastos", children: <PestanaFinanzas idBoliche={boliche.id_boliche} /> },
     ] : []),

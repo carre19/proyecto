@@ -20,7 +20,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const esAuth = error.config?.url?.startsWith("/auth/login");
+    const esAuth = error.config?.url?.startsWith("/auth/login") || error.config?.url?.startsWith("/auth/2fa");
+    // Admin que todavía no activó la verificación en dos pasos (cuando es obligatoria): solo puede usar la pantalla de Seguridad.
+    if (error.response?.status === 403 && error.response.data?.requiere_2fa && window.location.pathname !== "/seguridad") {
+      window.location.href = "/seguridad";
+    }
     if (error.response?.status === 401 && !esAuth) {
       localStorage.removeItem("token");
       localStorage.removeItem("usuario");

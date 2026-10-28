@@ -24,6 +24,10 @@ if (!process.env.JWT_SECRET) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Detrás de nginx (TRUST_PROXY=1) la dirección real de cada persona viene en X-Forwarded-For: sin esto, el límite de intentos
+// por dirección vería siempre la IP del proxy y frenaría a todos juntos.
+if (process.env.TRUST_PROXY) app.set("trust proxy", /^\d+$/.test(process.env.TRUST_PROXY) ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY);
+
 app.use(cors({ origin: process.env.FRONTEND_URL }));
 // Se guarda el cuerpo original: el aviso de pago va firmado y la firma se calcula sobre esos bytes exactos.
 app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));

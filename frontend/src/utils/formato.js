@@ -80,6 +80,7 @@ export const rolDe = (usuario) => ROLES[usuario?.rol] ?? "Sin rol";
 // y el cliente a explorar los boliches.
 export const inicioDe = (usuario) => {
   if (!usuario) return "/login";
+  if (usuario.verificacion?.obligatoria && !usuario.verificacion?.activa) return "/seguridad"; // primero tiene que activar la verificación en dos pasos
   if (usuario.rol === "cliente") return "/explorar";
   if ((usuario.rol === "rrpp_manager" || usuario.rol === "rrpp") && usuario.boliches?.length) {
     return `/boliches/${usuario.boliches[0].id_boliche}`;

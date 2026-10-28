@@ -10,10 +10,11 @@ const MAXIMO = 10;
 //   tipos           -> las entradas del evento ([{ id_tipo_entrada, nombre, tipo, estado, precio_virtual, precio_puerta }])
 //   campoPrecio     -> "precio_virtual" (página) o "precio_puerta" (puerta)
 //   conCargo        -> suma el cargo de la plataforma (solo las compras de la página)
+//   descuento       -> { nombre, porcentaje } del cliente con cuenta, si le corresponde alguno
 //   metodos         -> [{ value, label }] para elegir cómo se paga (solo en la puerta)
 //   contactoObligatorio -> pide teléfono o email para avisar cuando se confirme el pago
 //   onEnviar(datos) -> promesa; si falla, se muestra el mensaje acá
-export default function FormularioEntradas({ tipos, campoPrecio, conCargo, metodos, contactoObligatorio, textoBoton, onEnviar }) {
+export default function FormularioEntradas({ tipos, campoPrecio, conCargo, descuento, metodos, contactoObligatorio, textoBoton, onEnviar }) {
   const [cantidades, setCantidades] = useState({});
   const [personas, setPersonas] = useState({}); // { "idTipo-n": { nombre, apellido, dni } }
   const [contacto, setContacto] = useState({ contacto_email: "", contacto_telefono: "" });
@@ -23,7 +24,9 @@ export default function FormularioEntradas({ tipos, campoPrecio, conCargo, metod
 
   const total = Object.values(cantidades).reduce((t, n) => t + n, 0);
   const subtotal = tipos.reduce((t, x) => t + (cantidades[x.id_tipo_entrada] ?? 0) * x[campoPrecio], 0);
-  const cargo = conCargo ? Math.ceil((subtotal * PORCENTAJE_PLATAFORMA) / 100) : 0;
+  // El descuento del cliente con cuenta (el servidor lo calcula igual; acá se muestra antes de comprar).
+  const ahorro = descuento ? Math.floor((subtotal * descuento.porcentaje) / 100) : 0;
+  const cargo = conCargo ? Math.ceil(((subtotal - ahorro) * PORCENTAJE_PLATAFORMA) / 100) : 0;
 
   // Una fila de datos por cada entrada elegida.
   const filas = useMemo(
@@ -97,8 +100,9 @@ export default function FormularioEntradas({ tipos, campoPrecio, conCargo, metod
       <div className="form-entradas-total">
         <div>
           <div>{total} {total === 1 ? "entrada" : "entradas"}: {moneda(subtotal)}</div>
+          {ahorro > 0 && <div className="muted">Descuento «{descuento.nombre}» ({descuento.porcentaje} %): −{moneda(ahorro)}</div>}
           {conCargo && total > 0 && <div className="muted">Cargo de la plataforma ({PORCENTAJE_PLATAFORMA} %): {moneda(cargo)}</div>}
-          <strong>Total: {moneda(subtotal + cargo)}</strong>
+          <strong>Total: {moneda(subtotal - ahorro + cargo)}</strong>
         </div>
         <Button type="primary" size="large" disabled={total === 0} loading={enviando} onClick={enviar}>{textoBoton}</Button>
       </div>

@@ -1,0 +1,77 @@
+# PRODUCCIÓN en un VPS. Sin datos de ejemplo, con HTTPS, con la base y las imágenes en volúmenes y la verificación en dos pasos
+# obligatoria para los admins. Pasos completos en docs/DESPLIEGUE.md.
+#   cp deploy/.env.prod.example .env     (completar todos los valores)
+#   docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d --build
+name: plataforma
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: plataforma
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Definí DB_PASSWORD}
+      POSTGRES_DB: plataforma
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # Solo el esquema (nunca los datos de ejemplo). Se aplica una sola vez, con el volumen vacío.
+      - ../database/00_schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
+      - ../database/00_schema_fase2.sql:/docker-entrypoint-initdb.d/00_schema_fase2.sql:ro
+      - ../database/00_schema_fase3.sql:/docker-entrypoint-initdb.d/00_schema_fase3.sql:ro
+      - ../database/00_schema_fase4.sql:/docker-entrypoint-initdb.d/00_schema_fase4.sql:ro
+      - ../database/00_schema_fase5.sql:/docker-entrypoint-initdb.d/00_schema_fase5.sql:ro
+      - ../database/00_schema_fase6.sql:/docker-entrypoint-initdb.d/00_schema_fase6.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plataforma -d plataforma"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  back:
+    build: ..
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: plataforma
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: plataforma
+      DB_SSL: "false"
+      JWT_SECRET: ${JWT_SECRET:?Definí JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      FRONTEND_URL: https://${DOMINIO:?Definí DOMINIO}
+      FRONTEND_PUBLIC_URL: https://${DOMINIO}
+      TRUST_PROXY: "1"
+      VERIFICACION_ADMIN: obligatoria
+      TOTP_CLAVE: ${TOTP_CLAVE:?Definí TOTP_CLAVE}
+      PAGOS_WEBHOOK_SECRET: ${PAGOS_WEBHOOK_SECRET:-}
+      WHATSAPP_API_URL: ${WHATSAPP_API_URL:-}
+      WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN:-}
+      EMAIL_API_URL: ${EMAIL_API_URL:-}
+      EMAIL_API_TOKEN: ${EMAIL_API_TOKEN:-}
+      PORCENTAJE_PLATAFORMA: ${PORCENTAJE_PLATAFORMA:-6}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  front:
+    build:
+      context: ../frontend
+      args:
+        VITE_DOMINIO_BASE: ${DOMINIO}
+        NGINX_CONF: nginx-https.conf
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Certificados de comodín (*.dominio): fullchain.pem y privkey.pem. Ver docs/DESPLIEGUE.md.
+      - ${CERTIFICADOS:-./certs}:/etc/nginx/certs:ro
+    depends_on:
+      - back
+    restart: always
+
+volumes:
+  db_data:
+  uploads:

@@ -1,20 +1,19 @@
 #!/usr/bin/env bash
-# Reconstruye y levanta todo (db, back, front) con los últimos cambios.
-# Baja los contenedores viejos, borra sus imágenes, buildea imágenes nuevas
-# y corre contenedores nuevos. El volumen de la base (db_data) se conserva.
+# Reconstruye y levanta la demostración con Docker (db, back, front) con los últimos cambios.
+# Conserva los volúmenes (la base y las imágenes). Para PRODUCCIÓN ver docs/DESPLIEGUE.md.
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
-echo ">> Bajando contenedores e imágenes viejas..."
-docker compose down --remove-orphans --rmi local
+echo ">> Bajando contenedores viejos..."
+docker compose down --remove-orphans
 
-echo ">> Buildeando imágenes nuevas..."
+echo ">> Construyendo las imágenes nuevas..."
 docker compose build --pull
 
-echo ">> Levantando contenedores nuevos..."
+echo ">> Levantando..."
 docker compose up -d
 
 echo ">> Listo:"
 docker compose ps
-echo "   Front: http://localhost:8081  |  Back: http://localhost:3000  |  DB: volumen db_data"
+echo "   Front: http://localhost:8081  |  Back: http://localhost:3000"

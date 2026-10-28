@@ -1,6 +1,7 @@
 import { Modal } from "antd";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { comprasApi } from "../../api/plataforma.js";
+import { comprasApi, descuentoClienteApi } from "../../api/plataforma.js";
 import { mensajeError } from "../../services/api.js";
 import FormularioEntradas from "./FormularioEntradas.jsx";
 
@@ -8,6 +9,12 @@ import FormularioEntradas from "./FormularioEntradas.jsx";
 // donde se ve cómo pagar y, una vez confirmado el pago, los QR.
 export default function ModalCompra({ subdominio, evento, talonario, onCerrar }) {
   const navigate = useNavigate();
+  const [descuento, setDescuento] = useState(null);
+
+  // Si quien compra tiene una cuenta de cliente, se le muestra el descuento que le corresponde.
+  useEffect(() => {
+    if (localStorage.getItem("token")) descuentoClienteApi(subdominio).then(setDescuento).catch(() => setDescuento(null));
+  }, [subdominio]);
 
   const comprar = async (datos) => {
     try {
@@ -20,7 +27,7 @@ export default function ModalCompra({ subdominio, evento, talonario, onCerrar })
 
   return (
     <Modal open centered width={680} footer={null} onCancel={onCerrar} title={`Entradas · ${evento.nombre}`} destroyOnHidden>
-      <FormularioEntradas tipos={evento.entradas} campoPrecio="precio_virtual" conCargo contactoObligatorio textoBoton="Comprar" onEnviar={comprar} />
+      <FormularioEntradas tipos={evento.entradas} campoPrecio="precio_virtual" conCargo descuento={descuento} contactoObligatorio textoBoton="Comprar" onEnviar={comprar} />
     </Modal>
   );
 }

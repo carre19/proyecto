@@ -2,7 +2,7 @@
 
 Fuente de esta documentación: la página de Notion **"Proyecto nuestro"** (6 de octubre de 2026, @Gianluca). Todo lo que figura en la sección 1 es lo que dice esa página; lo que decidimos nosotros al implementarlo está en la sección 2 y lo que sigue sin definir, en la sección 4.
 
-- **Estado actual:** **fase 1 terminada** (base de datos, API y front de los 5 roles). **Fase 1B (boliches funcionales) terminada: base de datos, API y front** (quedan ajustes menores, ver 6.1B). La fase 2 (entradas con compra y QR) es la siguiente. El front **conserva su estilo actual**.
+- **Estado actual:** **todas las fases están hechas** (1 a 6): los 5 roles, boliches funcionales, venta de entradas con QR, pagos, RRPP, personal y finanzas, y la parte de la plataforma (descuentos, verificación en dos pasos, borrado de datos, cobros y despliegue). Están **probadas con 852 comprobaciones automáticas** y vistas en un navegador real. Lo que sigue pendiente son definiciones del equipo (dominio, servicios de pago y de mensajes: ver sección 4) y ajustes menores (6.2). El front **conserva su estilo actual**.
 - **Rama:** todo el trabajo está en `main` (no hay otras ramas).
 - **Base de datos:** PostgreSQL local administrada con pgAdmin 4 (ver "Puesta en marcha").
 - **Tecnología:** React + Vite en el front; Node.js + Express + PostgreSQL en el back; un VPS para correr todo.
@@ -243,6 +243,40 @@ Estas decisiones no están en la página de Notion: las tomamos para poder avanz
 - **Precios** en pesos enteros (sin centavos). **Tipografía** de la sección del boliche: por ahora la misma de la app (Cinzel + Philosopher), pendiente de confirmar.
 - **Robustez:** el pool de conexiones ya no tira el servidor si Postgres corta una conexión inactiva (antes la API se caía).
 
+## 2.2 Decisiones de las fases 2 a 6
+
+Como en las anteriores, no están en Notion: las tomamos para avanzar y se pueden cambiar.
+
+**Entradas y compra (fase 2)**
+- La compra queda **pendiente 30 minutos** (`MINUTOS_RESERVA`); si no se paga, se cancela sola y el cupo se libera. Mientras tanto la entrada reserva su lugar.
+- **Una persona (DNI) no puede tener dos entradas vigentes para el mismo evento** (la entrada es personal). Hasta 10 entradas por compra.
+- El **cupo** de cada tipo se controla en la base y con bloqueo de filas (dos compras a la vez no se pasan). Una entrada se marca **agotada sola** al venderse todo y vuelve a estar disponible si se libera cupo; si el admin la marca agotada a mano, no se toca.
+- Para avisar el pago hace falta **teléfono o email** del comprador (así se resuelve el pendiente de cómo conseguirlo). Se puede comprar **sin cuenta**: se ve la compra con un link (`/compra/:token`).
+- El **DNI** lo ven solo el admin, el manager y el RRPP; el superadmin ve el DNI enmascarado (como pide la documentación).
+- Una compra pagada **no se devuelve**. Una entrada de otro boliche se trata en la puerta como si no existiera.
+
+**Pagos (fase 3)**
+- El cliente transfiere a la **cuenta de cobro** que cargó el admin, con un **código de referencia** (`NX…`). Sin cuenta cargada, ese boliche vende solo en la puerta.
+- La confirmación automática la hace un **aviso firmado** (`POST /api/pagos/webhook`, HMAC-SHA256): el servicio que detecte la transferencia es el pendiente de la sección 4. Si llega menos plata, de más, tarde o repetida, el pago queda **"a revisar"** para el admin (que puede reactivar una compra vencida si todavía hay lugar).
+- Los avisos (WhatsApp y email) van por una **cola** que se envía aparte, con reintentos; sin servicio conectado quedan "simulados".
+- El **6 %** de la plataforma lo paga el cliente sobre las compras de la página (no en la puerta) y no es ingreso ni gasto del local.
+
+**RRPP (fase 4)**
+- Un **talonario** es por RRPP y por evento: cantidad asignada + **link propio** (`/t/CODIGO`). Las compras hechas con ese link se le adjudican y cuentan contra lo asignado (las reservas sin pagar también). Entre todos los talonarios no se pueden asignar más entradas que el total del evento.
+- La **comisión** se fija al cobrar con el porcentaje que el RRPP tenía en ese momento (cambiarla después no altera ventas anteriores). Las ventas en la puerta de un RRPP también son suyas.
+- Cada invitado de una lista debe tener la **edad mínima del evento**; un DNI figura una sola vez en las listas de un evento.
+
+**Personal, proveedores y finanzas (fase 5)**
+- Solo el admin (y el superadmin) los gestionan. Una persona o un proveedor **con historial no se borra**: se desactiva.
+- Resumen = entradas pagadas + ingresos cargados − gastos cargados − pagos al personal − comisiones de RRPP. Tres niveles: la noche, el boliche y el admin con todos sus locales.
+
+**Plataforma (fase 6)**
+- **Descuentos:** el cliente con cuenta de más de N meses recibe el **mayor** descuento que le corresponda (no se acumulan), solo en compras de la página.
+- **Verificación en dos pasos** (TOTP, apps como Google Authenticator) para admins y superadmin, con códigos de recuperación. Con `VERIFICACION_ADMIN=obligatoria` el admin sin activarla solo puede usar la pantalla Seguridad; por defecto es opcional (cómodo para desarrollar). El superadmin puede restablecérsela a un admin.
+- **Borrado de datos a los 3 meses** (nombre, DNI y contacto; lo económico se conserva): cuenta desde la última compra o el evento, lo que sea más tarde. **Vale también para las cuentas de clientes** (resuelve el pendiente; se apaga con `RETENCION_CUENTAS=false`). Corre una vez por día.
+- **Cobros:** `monto_mensual` del boliche es la mensualidad, o el monto por evento si el boliche es de un solo evento. El superadmin genera los cobros de cada mes (sin duplicar) y los marca pagados.
+- Cada boliche se ve en su **subdominio** si se define `VITE_DOMINIO_BASE`; mientras no haya dominio, en `/b/:subdominio`.
+
 ---
 
 # 3. Plan de trabajo
@@ -252,25 +286,27 @@ Estas decisiones no están en la página de Notion: las tomamos para poder avanz
 | **0** | Documentación en este README, copia del proyecto con PostgreSQL local | ✅ Hecha |
 | **1** | Esquema multi-boliche; los 5 roles con su login; **panel del superadmin** (boliches y sus admins, usuarios); **panel del admin** (sus boliches, equipo y eventos de cada noche); **panel del manager** (su equipo y eventos); **página pública del boliche**; pruebas de que cada local ve únicamente lo suyo. Todo con el estilo actual del front | ✅ Terminada: base de datos, API y front, probados |
 | **1B** | Boliches funcionales: ficha del local (descripción, ubicación, capacidad, fotos con portada), **entradas por evento** (tandas y VIP con precio virtual y de puerta, cupo y estado), **carta de bebidas**, **mesas VIP**, **colores propios** del boliche (claro y oscuro) y página pública completa | ✅ Terminada: base de datos y API (291 checks) y front probado en navegador; ajustes menores en 6.1B |
-| **2** | Entradas: tandas, VIP, precios virtual y de puerta, capacidad; compra con nombre, apellido y DNI; QR de un solo uso y control en puerta | ⏳ |
-| **3** | Pagos: confirmación automática de la transferencia, avisos por WhatsApp y Gmail, comisión de la plataforma (6 %) | ⏳ Depende de definiciones |
-| **4** | RRPP: alta y asignación, talonarios con link propio, listas de invitados, comisión, rankings y resultados | ⏳ |
-| **5** | Personal externo (fichas y dotación por evento), proveedores, gastos e ingresos en sus tres niveles | ⏳ |
-| **6** | Cuenta del cliente y descuentos, verificación extra del admin, borrado de datos a los 3 meses, cobros y mensualidades del superadmin, despliegue en el VPS | ⏳ |
+| **2** | Entradas: tandas, VIP, precios virtual y de puerta, capacidad; compra con nombre, apellido y DNI; QR de un solo uso y control en puerta | ✅ Hecha: compra con cupos, QR, venta en puerta y control de acceso (ver 6.1C) |
+| **3** | Pagos: confirmación automática de la transferencia, avisos por WhatsApp y Gmail, comisión de la plataforma (6 %) | ✅ Hecha con conexiones por configuración: falta elegir el servicio que detecta la transferencia y los de mensajes (ver 6.1D y sección 4) |
+| **4** | RRPP: alta y asignación, talonarios con link propio, listas de invitados, comisión, rankings y resultados | ✅ Hecha (ver 6.1E) |
+| **5** | Personal externo (fichas y dotación por evento), proveedores, gastos e ingresos en sus tres niveles | ✅ Hecha (ver 6.1F) |
+| **6** | Cuenta del cliente y descuentos, verificación extra del admin, borrado de datos a los 3 meses, cobros y mensualidades del superadmin, despliegue en el VPS | ✅ Hecha: falta elegir proveedor del VPS y dominio (ver 6.1G y `docs/DESPLIEGUE.md`) |
 
 ---
 
 # 4. Pendientes por definir
 
-Lo que figura en Notion como sin resolver. Frena parte de las fases 3 y 6.
+Lo que figura en Notion como sin resolver, y cómo quedó resuelto por ahora (se puede cambiar).
 
-- [ ] Los montos: la mensualidad por boliche y el monto de un evento único.
-- [ ] Qué dominio va a tener la plataforma (cada boliche usa un subdominio de ese dominio).
-- [ ] Cómo funciona el link del talonario: si va impreso en las entradas a mano y con qué banco o cuenta se conecta.
-- [ ] Con qué servicio se detecta que llegó la transferencia para confirmarla automáticamente.
-- [ ] Cómo se obtiene el teléfono o el Gmail del cliente para el aviso, si al comprar solo se piden nombre, apellido y DNI.
-- [ ] Si la regla de los 3 meses vale también para los clientes con cuenta, o solo para quienes compran una vez.
-- [x] Qué backend y base de datos usar: **Node.js + PostgreSQL** (ver sección 2). Falta elegir el proveedor del VPS.
+- [ ] **Los montos:** la mensualidad por boliche y el monto de un evento único son configurables por boliche (los carga el superadmin); falta que el equipo defina los valores.
+- [ ] **El dominio** de la plataforma: el front y los archivos de despliegue ya soportan un subdominio por boliche (`VITE_DOMINIO_BASE`, ver `docs/DESPLIEGUE.md`); falta elegir el dominio y el proveedor del VPS.
+- [x] **Cómo funciona el link del talonario:** es un link `/t/CODIGO` que lleva a la página del boliche con el vendedor adjudicado; el cliente paga por transferencia a la cuenta que cargó el admin. Si el equipo quiere que el link vaya impreso en las entradas a mano o conectado a otro banco, se ajusta (ver sección 2.2).
+- [ ] **Con qué servicio se detecta la transferencia:** el sistema recibe el aviso por un webhook firmado; falta elegir el servicio (banco, Mercado Pago, etc.) y conectarlo. Mientras tanto el admin confirma a mano.
+- [x] **Cómo se obtiene el teléfono o el email del cliente:** se piden al comprar (al menos uno).
+- [x] **Si la regla de los 3 meses vale para clientes con cuenta:** por ahora sí (se puede apagar con `RETENCION_CUENTAS=false`).
+- [x] Qué backend y base de datos usar: **Node.js + PostgreSQL**.
+- [ ] **Servicios de mensajes:** WhatsApp y email se conectan por HTTP (`WHATSAPP_API_URL`, `EMAIL_API_URL`); falta elegir los proveedores.
+- [ ] **Space Grotesk + glassmorphism** (Notion): el estilo del front se conserva a pedido del equipo.
 
 ---
 
@@ -284,7 +320,8 @@ La base es un PostgreSQL local (versión 12 o superior) que se maneja desde pgAd
 2. **Archivo `.env`.** Copiar `.env.example` como `.env` y completar `DB_PASSWORD`. **No borrar las demás líneas** (sobre todo `JWT_SECRET`). El `.env` no se sube a GitHub.
 3. **Crear y cargar la base**, de cualquiera de estas dos formas:
    - **Con el script:** `./database/cargar_base.sh` crea la base y carga el esquema y los datos de prueba. Con `--reset` la borra y la vuelve a crear.
-   - **A mano en pgAdmin:** clic derecho en *Databases → Create → Database…*; luego *Query Tool* sobre esa base y ejecutar, en orden, `database/00_schema.sql` y `database/01_datos_prueba.sql`.
+   - **A mano en pgAdmin:** clic derecho en *Databases → Create → Database…*; luego *Query Tool* sobre esa base y ejecutar, en orden, `database/00_schema.sql`, cada `database/00_schema_faseN.sql` (fases 2 a 6) y `database/01_datos_prueba.sql`.
+   - **Si ya tenés la base de una fase anterior:** `./database/cargar_base.sh --migrar` le aplica las fases nuevas sin tocar tus datos (los archivos `00_schema_faseN.sql` se pueden repetir sin problema). Después reiniciá el back.
 4. **Levantar la app:** `npm install && npm run dev` (back en http://localhost:3000) y, en otra terminal, `cd frontend && npm install && npm run dev` (front en http://localhost:5173).
 
 | Variable | Descripción | Ejemplo |
@@ -296,6 +333,17 @@ La base es un PostgreSQL local (versión 12 o superior) que se maneja desde pgAd
 | `JWT_SECRET` | Secreto para firmar las sesiones (obligatorio: sin él el servidor no arranca) | texto largo y aleatorio |
 | `JWT_EXPIRES_IN` | Duración de la sesión | `8h` |
 | `FRONTEND_URL` | Origen permitido por CORS | `http://localhost:5173` |
+| `FRONTEND_PUBLIC_URL` | Dirección pública del front, para los links de los avisos (por defecto `FRONTEND_URL`) | `https://mi-dominio.com` |
+| `PORCENTAJE_PLATAFORMA` / `MINUTOS_RESERVA` | Cargo de la plataforma (%) y minutos para pagar | `6` / `30` |
+| `PAGOS_WEBHOOK_SECRET` | Secreto con el que se firma el aviso de pago (sin él, la confirmación automática está apagada) | texto largo |
+| `WHATSAPP_API_URL` / `EMAIL_API_URL` (+ `_TOKEN`) | Servicios para los avisos al cliente (sin ellos, quedan "simulados") | |
+| `VERIFICACION_ADMIN` | `obligatoria` para que los admins deban activar la verificación en dos pasos | `opcional` |
+| `TOTP_CLAVE` | Clave que cifra los secretos de la verificación en dos pasos (por defecto deriva de `JWT_SECRET`) | texto largo |
+| `RETENCION_MESES` / `RETENCION_CUENTAS` | Meses para borrar datos personales y si también se borran cuentas de clientes | `3` / `true` |
+| `LIMITE_COMPRAS` / `LIMITE_LOGIN` | Intentos por dirección cada 10 minutos | `30` / `30` |
+| `TRUST_PROXY` | `1` si el back corre detrás de nginx (para ver la IP real) | |
+| `TAREAS_AUTO` | `false` para apagar las tareas periódicas en una copia del back | `true` |
+| `VITE_DOMINIO_BASE` | (al construir el front) dominio de la plataforma para los subdominios de los boliches | `mi-dominio.com` |
 
 ## Cuentas de prueba
 
@@ -308,15 +356,25 @@ Los datos de prueba (`database/01_datos_prueba.sql`) traen una cuenta de cada ro
 | `admin2@demo.com` | Admin | Club Tres |
 | `manager1@demo.com` | RRPP manager | Boliche Uno |
 | `rrpp1@demo.com`, `rrpp2@demo.com` | RRPP | Boliche Uno |
-| `cliente@demo.com` | Cliente | Solo lo público |
+| `cliente@demo.com` | Cliente | Solo lo público (y sus compras en `/mis-entradas`) |
+
+Los datos de prueba incluyen además un talonario de ejemplo para RRPP 1 (link `/t/DEMORRPP1`), una lista de invitados, personal, proveedores, gastos e ingresos de Boliche Uno, y la cuenta de cobro de Boliche Uno y Bar Dos.
 
 Para crear un superadmin real (sin los datos de prueba): `npm run crear-superadmin -- email@dominio.com "una contraseña" Nombre Apellido`.
+
+## Pruebas automáticas
+
+Cada archivo de `pruebas/` corre contra una base **recién cargada** y con el back levantado (crean y borran datos). `npm run prueba-api`, `prueba-imagenes`, `prueba-fase1b`, `prueba-fase2` … `prueba-fase6`, y `prueba-fase3-servicios` / `prueba-fase6-servicios` (levantan su propio servidor con otra configuración). Para el back de pruebas: `PAGOS_WEBHOOK_SECRET=secreto-de-prueba LIMITE_COMPRAS=100000 LIMITE_LOGIN=100000 TAREAS_AUTO=false`. Las comprobaciones que envejecen fechas usan `PGHOST`/`PGPORT`/`PGUSER`/`PGPASSWORD`/`PGDATABASE`. Hoy: **852 comprobaciones, todas OK**.
+
+## Despliegue
+
+Con Docker: `docker compose up -d --build` levanta una demostración (base con datos de ejemplo, back y front). Para un VPS en producción (HTTPS, subdominios, copias de seguridad): ver **[docs/DESPLIEGUE.md](docs/DESPLIEGUE.md)** y la carpeta `deploy/`.
 
 ---
 
 # 6. Estado de avance
 
-Se actualiza con cada cambio importante. Última actualización: fase 1B terminada (base de datos, API y front).
+Se actualiza con cada cambio importante. Última actualización: fases 1 a 6 terminadas (base de datos, API y front), con 852 comprobaciones automáticas.
 
 ## 6.1 Lo que está hecho
 
@@ -365,6 +423,43 @@ Se actualiza con cada cambio importante. Última actualización: fase 1B termina
 - [ ] Revisar el panel y la página pública en celular (los estilos ya tienen reglas para pantallas chicas, falta verlos).
 - [ ] Confirmar con el equipo la tipografía de la sección (hoy la misma de la app) y si el negro y dorado alcanza solo a la página pública (como está hoy) o también al panel.
 
+## 6.1C Fase 2: entradas, QR y puerta
+
+- **Esquema** (`database/00_schema_fase2.sql`): `compra`, `entrada` (una por persona, con QR y DNI) y `acceso_puerta`; triggers de cupo vendido y de no bajar el cupo por debajo de lo vendido; función que cancela las compras vencidas. Todo con claves compuestas por boliche.
+- **API:** compra pública sin cuenta (`/publico/.../comprar`) o con la cuenta del cliente, compra consultable por link, ventas por evento (cada rol ve lo suyo), pago y cancelación manuales, venta en puerta, y control de acceso (escanear, buscar por DNI, reingreso, resumen y movimientos). Cupos con bloqueo de filas: **8 compras a la vez por 3 entradas aceptan exactamente 3**; **6 escaneos simultáneos del mismo QR dejan entrar a uno**.
+- **Front:** formulario de compra (una fila de nombre, apellido y DNI por entrada, con el total y el 6 %), página de la compra con los QR, "Mis entradas" para el cliente, pestañas **Ventas** (confirmar o cancelar pagos, venta en puerta) y **Puerta** (escanear con lector o cámara, buscar por DNI, reingreso, contadores). Probado de punta a punta en el navegador.
+- **Pruebas:** `pruebas/api_fase2.py` (99).
+
+## 6.1D Fase 3: pagos
+
+- **Esquema** (`00_schema_fase3.sql`): `boliche_cuenta_cobro`, `pago` y `notificacion` (cola de avisos).
+- **API:** cuenta de cobro del boliche, **aviso de pago firmado** (confirma solo; tolera repetidos, montos de más y de menos, compras vencidas), pagos "a revisar" (resolver o **reactivar** una compra vencida), avisos por WhatsApp y email con reintentos, y el 6 % de la plataforma. Límite de intentos de compra por dirección.
+- **Front:** la compra muestra a dónde transferir (con botones para copiar), pestaña **Pagos** (cuenta, pagos para revisar, historial, avisos enviados).
+- **Pruebas:** `api_fase3.py` (68) y `api_fase3_servicios.py` (10: webhook sin secreto, reintento contra un WhatsApp falso y límite de compras).
+- **Falta:** elegir y conectar el servicio que detecta la transferencia y los de WhatsApp y email (sección 4).
+
+## 6.1E Fase 4: RRPP
+
+- **Esquema** (`00_schema_fase4.sql`): `talonario`, `lista_invitados`, `invitado` (con trigger de edad mínima), y la compra atada al talonario.
+- **API:** talonarios con link propio (los asigna el admin o el manager a su equipo), ventas adjudicadas al RRPP con su comisión fijada al cobrar, listas de invitados (cada RRPP las suyas), resultados (por RRPP, con entradas asignadas), ranking (sin montos) y "mis ventas" (con el nombre de quien pagó). Los invitados entran por la puerta con su DNI.
+- **Front:** pantalla principal del RRPP y del manager (**Resultados RRPP**), **Talonarios**, **Listas**, link `/t/CODIGO` con el aviso "estás comprando con el link de…", e invitados en la puerta.
+- **Pruebas:** `api_fase4.py` (115).
+
+## 6.1F Fase 5: personal, proveedores y finanzas
+
+- **Esquema** (`00_schema_fase5.sql`): `personal` (con contactos y eventos en que trabajó), `evento_dotacion`, `proveedor`, `gasto` e `ingreso`.
+- **API:** fichas del personal con contactos, historial y cuánto cobra; asignación a cada noche con su pago y la dotación (seguridad, limpieza, barman); proveedores con lo gastado; gastos e ingresos; y el resumen en **tres niveles** (noche, boliche y admin con todos sus locales) con período.
+- **Front:** pestañas **Personal**, **Proveedores** e **Ingresos y gastos**, y la pantalla **Finanzas** del admin.
+- **Pruebas:** `api_fase5.py` (121, con los montos exactos de cada nivel).
+
+## 6.1G Fase 6: plataforma
+
+- **Esquema** (`00_schema_fase6.sql`): `descuento`, `usuario_recuperacion` y columnas de la verificación en dos pasos, `cobro_plataforma`, y las marcas de datos borrados.
+- **API:** descuentos del admin aplicados a las compras del cliente con cuenta; **verificación en dos pasos** (TOTP verificado contra los vectores de la RFC 6238; códigos de recuperación; reuso de un código rechazado; bloqueo tras 5 fallos; modo obligatorio con sesión limitada; el superadmin la restablece); **borrado de datos a los 3 meses** (script `npm run limpiar-datos` y una vez por día); cobros y mensualidades del superadmin y el resumen de lo que gana la plataforma.
+- **Front:** segundo paso en el login, pantalla **Seguridad** (QR, códigos de recuperación), pestaña **Descuentos**, pantalla **Plataforma** del superadmin (cobros, mensualidades, ganancias, borrado de datos), subdominio por boliche (`VITE_DOMINIO_BASE`).
+- **Despliegue:** `docker-compose.yml` (demostración), `deploy/docker-compose.prod.yml` (producción con HTTPS), `frontend/nginx-https.conf`, `deploy/backup.sh` y la guía `docs/DESPLIEGUE.md`. Las imágenes de Docker se construyeron y la configuración de nginx se validó.
+- **Pruebas:** `api_fase6.py` (130) y `api_fase6_servicios.py` (18: verificación obligatoria y límite de inicios de sesión).
+
 ## 6.2 Lo que falta de la fase 1
 
 Nada obligatorio. Mejoras menores anotadas:
@@ -372,9 +467,13 @@ Nada obligatorio. Mejoras menores anotadas:
 - [ ] El manager ve el bloque "próximamente" antes que sus eventos; conviene bajarlo cuando haya datos reales.
 - [ ] Aplicar Space Grotesk + glassmorphism de Notion, si el equipo lo pide más adelante (hoy se conserva el estilo actual).
 
-## 6.3 Lo que falta de las fases siguientes
+## 6.3 Lo que falta
 
-Ver la tabla de la sección 3: entradas y QR (fase 2), pagos (fase 3), RRPP con talonarios y listas (fase 4), personal externo y finanzas (fase 5), y cuenta del cliente, verificación extra, borrado a los 3 meses y despliegue (fase 6). Las fases 3 y 6 dependen de los pendientes de la sección 4.
+Están hechas las 6 fases. Lo que queda no es código sino **definiciones y conexiones** (sección 4): los montos, el dominio y el proveedor del VPS, el servicio que detecta la transferencia y los de WhatsApp y email. Y algunos ajustes menores:
+- [ ] Revisar el panel y las páginas públicas en celular (los estilos tienen reglas para pantallas chicas, falta recorrerlas).
+- [ ] Probar la lectura del QR con la cámara en un celular real (usa la API `BarcodeDetector` del navegador; con un lector de QR o pegando el código ya funciona).
+- [ ] Reserva de mesas VIP por el cliente (hoy se ve cuáles hay y su estado; el admin las marca reservadas).
+- [ ] Comisiones, resultados y finanzas por período en una pantalla de exportación (hoy se ven en pantalla).
 
 ## 6.4 Cosas a tener en cuenta
 
@@ -432,6 +531,62 @@ Ahora cuelgan de `/boliches/:id` (404 si la persona no es del boliche). **Leen:*
 | `GET /publico/boliches/:subdominio` | Página pública: ficha, fotos (portada primero), colores, bebidas disponibles, mesas VIP activas y próximos eventos con sus entradas (sin cupo) y mesas |
 | `GET /publico/boliches` | Lista pública con `portada`, dirección y capacidad |
 
+## 7.2 Rutas de las fases 2 a 6
+
+Salvo las públicas, requieren `Authorization: Bearer <token>`. Lo que cuelga de `/boliches/:id` da 404 a quien no es de ese boliche.
+
+**Compra y puerta (fase 2)**
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `POST /publico/boliches/:sub/eventos/:id/comprar` | Cualquiera (con o sin sesión) | Compra: `{items:[{id_tipo_entrada, nombre, apellido, dni}], contacto_email?, contacto_telefono?, talonario?}` |
+| `GET /publico/compras/:token` | Quien tiene el link | La compra; los QR salen una vez paga. Pendiente: trae la cuenta donde transferir |
+| `GET /cliente/compras` | Cliente | Sus compras con QR |
+| `GET /boliches/:id/eventos/:idEvento/ventas` | Admin, manager, RRPP | Ventas (cada rol ve lo suyo; DNI según rol) |
+| `PUT /boliches/:id/compras/:idCompra/pagar` · `/cancelar` | Admin, manager | Confirma el pago a mano / cancela una compra sin pagar |
+| `POST /boliches/:id/eventos/:idEvento/venta-puerta` | Admin, manager, RRPP | Venta en el local (precio de puerta) |
+| `POST .../puerta/escanear` · `/buscar` · `/reingreso` · `/invitado` | Admin, manager, RRPP | Valida un QR (una sola vez), busca por DNI, registra un reingreso, deja entrar a un invitado de lista |
+| `GET .../puerta/resumen` · `/accesos` | Admin, manager, RRPP | Contadores y últimos movimientos |
+
+**Pagos (fase 3)**
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `POST /pagos/webhook` | El servicio de pagos (firma `X-Firma`) | Confirma una compra por su referencia |
+| `GET/PUT /boliches/:id/cuenta-cobro` | Admin, manager (lee) · Admin (edita) | Cuenta donde se cobra |
+| `GET /boliches/:id/pagos[?estado=]` · `PUT /pagos/:id/resolver` · `/reactivar` | Admin, manager | Pagos y los que hay que revisar |
+| `GET /boliches/:id/notificaciones` | Admin, manager | Avisos enviados a clientes |
+
+**RRPP (fase 4)**
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /publico/talonarios/:codigo` | Cualquiera | A qué evento lleva el link de un RRPP |
+| `GET/POST /boliches/:id/eventos/:idEvento/talonarios` · `PUT/DELETE .../:idTalonario` | Todos ven lo suyo · Admin y manager asignan | Talonarios |
+| `GET /.../eventos/:idEvento/listas` · `POST/PUT/DELETE` de listas e invitados | Todos ven lo suyo · el RRPP arma las suyas | Listas de invitados |
+| `GET /boliches/:id/rrpp/resultados` · `/ranking` · `/mis-ventas` | Admin, manager, RRPP | Resultados, ranking (sin montos) y ventas con quién pagó |
+
+**Personal, proveedores y finanzas (fase 5)** — solo admin y superadmin
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET/POST /boliches/:id/personal` · `GET/PUT/DELETE .../:idPersonal` · `POST/DELETE .../contactos` | Fichas del personal |
+| `GET .../eventos/:idEvento/personal` · `PUT/DELETE .../:idPersonal` · `PUT .../dotacion` | Personal de cada noche y la dotación |
+| `GET/POST/PUT/DELETE /boliches/:id/proveedores` · `/gastos` · `/ingresos` | Proveedores, gastos e ingresos |
+| `GET .../eventos/:idEvento/finanzas` · `GET /boliches/:id/finanzas` · `GET /finanzas` | Resumen: de la noche, del boliche y del admin con todos sus locales (`?desde=&hasta=`) |
+
+**Plataforma (fase 6)**
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /publico/boliches/:sub/descuento` | Cliente con sesión | El descuento que le corresponde |
+| `GET/POST/PUT/DELETE /boliches/:id/descuentos` | Admin | Descuentos del boliche |
+| `POST /auth/login` → `{requiere_verificacion, ticket}` · `POST /auth/2fa/verificar` | Admins | Segundo paso del login |
+| `GET /auth/2fa` · `POST /auth/2fa/preparar` · `/activar` · `/desactivar` | Admin, superadmin | Verificación en dos pasos |
+| `DELETE /usuarios/:id/2fa` | Superadmin | Restablece la verificación de un admin |
+| `GET /plataforma/resumen` · `GET/POST /plataforma/cobros` · `PUT .../:id/pagar` | Superadmin | Cobros, mensualidades y lo que gana la plataforma |
+| `POST /plataforma/retencion/ejecutar` | Superadmin | Corre ahora el borrado de datos vencidos |
+
 ---
 
 # 8. Bitácora de trabajo
@@ -462,4 +617,13 @@ Qué se hizo y cuándo, en orden. Se agrega una línea por cada cambio important
 | 2026-10-28 | Se levanta la app para probar: migración de la base local (`plataforma`) con los datos demo de la 1B, back en el puerto 3001 y front en el 5174 |
 | 2026-10-28 | **Front 1B:** pestañas Entradas, Bebidas, Mesas VIP y Diseño en el panel del boliche; latitud, longitud y portada en Datos del local; botón de imagen compartido (`AccionesImagen`) |
 | 2026-10-28 | **Front 1B:** página pública del boliche con su diseño propio (negro y dorado, modo claro/oscuro), entradas, mesas VIP y carta. Probado en navegador; se corrigieron acciones cortadas en las tablas |
-| *Próximo* | **Fase 2:** tandas de entradas y VIP, precios virtual y de puerta, compra con nombre, apellido y DNI, y QR de un solo uso |
+| 2026-10-28 | **Fase 2, API:** compra con DNI, cupos con bloqueo de filas, vencimiento de reservas, QR de un solo uso, venta en puerta y control de acceso (99 comprobaciones, incluidas compras y escaneos simultáneos) |
+| 2026-10-28 | **Fase 2, front:** compra con QR, "Mis entradas", pestañas Ventas y Puerta; probado de punta a punta en el navegador |
+| 2026-10-28 | **Fase 3:** cuenta de cobro, confirmación automática por aviso firmado, pagos a revisar y reactivación, cola de avisos con reintentos, 6 % de la plataforma, límite de intentos (78 comprobaciones) |
+| 2026-10-28 | **Fase 4:** talonarios con link propio, comisión fijada al cobrar, listas de invitados con edad mínima, resultados, ranking y "mis ventas" (115 comprobaciones) y las pantallas del RRPP y del manager |
+| 2026-10-28 | **Fase 5:** personal externo, dotación por evento, proveedores, gastos e ingresos y resumen en tres niveles (121 comprobaciones) y sus pantallas |
+| 2026-10-28 | **Fase 6:** descuentos, verificación en dos pasos (TOTP validado con los vectores de la RFC 6238), borrado de datos a los 3 meses, cobros y mensualidades del superadmin (148 comprobaciones) y sus pantallas |
+| 2026-10-28 | **Despliegue:** docker compose de demostración y de producción con HTTPS, subdominio por boliche, copias de seguridad y guía `docs/DESPLIEGUE.md`; las imágenes se construyeron y la configuración de nginx se validó |
+| 2026-10-28 | Corrección: un código de verificación incorrecto cerraba la sesión del front (el interceptor trataba el 401 como sesión vencida); el pool de la base ya no tira el servidor (fase 1B) |
+| 2026-10-28 | Todas las fases hechas. Total: 852 comprobaciones automáticas, todas OK |
+| *Próximo* | Definir con el equipo lo pendiente de la sección 4 (dominio, VPS, servicio de pagos y de mensajes) y repasar el panel en celular |

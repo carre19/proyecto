@@ -11,3 +11,12 @@ export const registrar = (datos) =>
 
 export const obtenerPerfil = () =>
   api.get("/auth/perfil").then((res) => res.data);
+
+// Verificación en dos pasos (admins). El login puede devolver { requiere_verificacion, ticket } en vez de la sesión:
+// con el ticket y el código de la app (o uno de recuperación) se completa con verificarSegundoPaso.
+export const verificarSegundoPaso = (ticket, codigo) =>
+  api.post("/auth/2fa/verificar", { ticket, codigo }).then((res) => res.data);
+export const estado2fa = () => api.get("/auth/2fa").then((res) => res.data);
+export const preparar2fa = () => api.post("/auth/2fa/preparar").then((res) => res.data);
+export const activar2fa = (codigo) => api.post("/auth/2fa/activar", { codigo }).then((res) => res.data);
+export const desactivar2fa = (password, codigo) => api.post("/auth/2fa/desactivar", { password, codigo }).then((res) => res.data);

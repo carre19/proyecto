@@ -97,7 +97,7 @@ export default function Compra() {
 
         <div className="compra-resumen">
           <span>Entradas: {moneda(compra.subtotal)}</span>
-          {compra.descuento > 0 && <span>Descuento: −{moneda(compra.descuento)}</span>}
+          {compra.descuento > 0 && <span>Descuento{compra.descuento_nombre ? ` «${compra.descuento_nombre}»` : ""}: −{moneda(compra.descuento)}</span>}
           {compra.cargo_plataforma > 0 && <span>Cargo de la plataforma: {moneda(compra.cargo_plataforma)}</span>}
           <strong>Total: {moneda(compra.total)}</strong>
         </div>

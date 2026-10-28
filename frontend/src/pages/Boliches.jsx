@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { bolichesApi, usuariosApi } from "../api/plataforma.js";
 import Estado from "../components/Estado.jsx";
 import PaginaCrud from "../components/PaginaCrud.jsx";
-import Proximamente from "../components/Proximamente.jsx";
 import usePermisos from "../hooks/usePermisos.js";
 
 const COBROS = [{ value: "mensual", label: "Mensual" }, { value: "evento_unico", label: "Evento único" }];
@@ -92,24 +91,8 @@ export default function Boliches() {
           ...(hayAdminNuevo ? { admin: { nombre: admin_nombre, apellido: admin_apellido, email: admin_email, password: admin_password } } : {}),
         });
       },
-      // Lo de las pantallas principales que llegan en otras fases (Notion: ingresos y gastos, ranking, cobros).
-      pie: permisos.esSuperadmin && (
-        <Proximamente
-          items={
-            permisos.esSuperadmin
-              ? [
-                  { titulo: "Mensualidades y cobros pendientes", texto: "Lo que debe cada boliche.", fase: 6 },
-                  { titulo: "Lo que gana la plataforma por entradas", texto: "El 6 % de cada entrada vendida.", fase: 3 },
-                ]
-              : [
-                  { titulo: "Ingresos y gastos", texto: "El resumen de todos tus locales.", fase: 5 },
-                  { titulo: "Ranking de ventas por RRPP", texto: "Quién vende más.", fase: 4 },
-                ]
-          }
-        />
-      ),
     };
-  }, [admins, permisos.esSuperadmin, navigate]);
+  }, [admins, navigate]);
 
   return <PaginaCrud config={config} />;
 }

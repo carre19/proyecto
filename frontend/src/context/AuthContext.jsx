@@ -3,7 +3,9 @@ import * as authService from "../services/authService";
 
 // Sesión global. Guarda el token y el usuario en localStorage para sobrevivir a recargas.
 //   usuario   -> datos del usuario logueado (o null): su rol y los boliches a los que accede
-//   ingresar  -> hace login y guarda la sesión
+//   ingresar  -> hace login y guarda la sesión (o devuelve { ticket } si falta la verificación en dos pasos)
+//   completarVerificacion -> el segundo paso del login de los admins
+//   guardarSesion -> guarda un token y un usuario nuevos (por ejemplo, al activar la verificación)
 //   salir     -> borra la sesión
 //   refrescar -> vuelve a pedir el perfil al back (el rol y los boliches pueden cambiar mientras la sesión sigue abierta)
 // Uso en cualquier componente: const { usuario, ingresar, salir } = useAuth();
@@ -26,10 +28,23 @@ export function AuthProvider({ children }) {
     setUsuario(datos);
   };
 
+  const guardarSesion = (token, datosUsuario) => {
+    localStorage.setItem("token", token);
+    guardarUsuario(datosUsuario);
+  };
+
+  // Devuelve { ticket } si falta el segundo paso (admin con verificación en dos pasos): ahí todavía NO hay sesión.
   const ingresar = async (email, password) => {
     const datos = await authService.login(email, password);
-    localStorage.setItem("token", datos.token);
-    guardarUsuario(datos.usuario);
+    if (datos.requiere_verificacion) return { ticket: datos.ticket };
+    guardarSesion(datos.token, datos.usuario);
+    return {};
+  };
+
+  // Completa el login con el código de la app (o uno de recuperación).
+  const completarVerificacion = async (ticket, codigo) => {
+    const datos = await authService.verificarSegundoPaso(ticket, codigo);
+    guardarSesion(datos.token, datos.usuario);
   };
 
   const salir = () => {
@@ -66,7 +81,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ usuario, ingresar, salir, refrescar }}>
+    <AuthContext.Provider value={{ usuario, ingresar, completarVerificacion, guardarSesion, salir, refrescar }}>
       {children}
     </AuthContext.Provider>
   );

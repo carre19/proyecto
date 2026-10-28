@@ -29,8 +29,10 @@ const agruparPorCategoria = (bebidas) => {
 // las mesas VIP del local y la carta de bebidas. Tiene los colores y el modo claro/oscuro de ESE boliche
 // (se abre siempre en oscuro; el botón de arriba alterna solo esta página, no el modo de la app).
 // La compra de entradas, la reserva de mesas y "mis entradas con QR" llegan en la fase 2.
-export default function PaginaBoliche() {
-  const { subdominio } = useParams();
+export default function PaginaBoliche({ subdominioFijo }) {
+  // Entrando por boliche-uno.<dominio> el subdominio sale de la dirección; si no, de la ruta /b/:subdominio.
+  const { subdominio: deLaRuta } = useParams();
+  const subdominio = subdominioFijo ?? deLaRuta;
   const navigate = useNavigate();
   const [boliche, setBoliche] = useState(null);
   const [noExiste, setNoExiste] = useState(false);

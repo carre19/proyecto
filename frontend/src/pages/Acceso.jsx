@@ -1,4 +1,4 @@
-import { ArrowLeftOutlined, IdcardOutlined, LockOutlined, MailOutlined, PhoneOutlined, UserOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, IdcardOutlined, LockOutlined, MailOutlined, PhoneOutlined, SafetyOutlined, UserOutlined } from "@ant-design/icons";
 import { Alert, Button, Form, Input, Segmented } from "antd";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
@@ -14,7 +14,8 @@ import { inicioDe } from "../utils/formato.js";
 // Crear una cuenta es solo para clientes: el resto de los roles los da de alta quien corresponde (superadmin, admin o manager).
 export default function Acceso({ modo }) {
   const esLogin = modo === "login";
-  const { usuario, ingresar } = useAuth();
+  const { usuario, ingresar, completarVerificacion } = useAuth();
+  const [ticket, setTicket] = useState(null); // si no es null, falta el segundo paso del login (verificación en dos pasos)
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -32,9 +33,24 @@ export default function Acceso({ modo }) {
     try {
       if (!esLogin) await registrar(valores);
       // Al entrar, cada rol va a su pantalla de inicio (la Navigate de arriba se encarga cuando cambia la sesión).
-      await ingresar(valores.email, valores.password);
+      const { ticket: paso2 } = await ingresar(valores.email, valores.password);
+      if (paso2) {
+        setTicket(paso2);
+        setEnviando(false);
+      }
     } catch (err) {
       setError(mensajeError(err, esLogin ? "Error al iniciar sesión" : "Error al crear la cuenta"));
+      setEnviando(false);
+    }
+  };
+
+  const verificar = async ({ codigo }) => {
+    setError("");
+    setEnviando(true);
+    try {
+      await completarVerificacion(ticket, codigo);
+    } catch (err) {
+      setError(mensajeError(err, "El código no es correcto"));
       setEnviando(false);
     }
   };
@@ -61,6 +77,21 @@ export default function Acceso({ modo }) {
       </div>
 
       <div className="auth-form">
+        {ticket ? (
+          <Form className="swap" layout="vertical" requiredMark={false} size="large" onFinish={verificar} disabled={enviando}>
+            <div>
+              <h1>Verificación en dos pasos</h1>
+              <p className="lead">Ingresá el código de 6 números de tu app de verificación. Si perdiste el celular, usá un código de recuperación.</p>
+            </div>
+            <Form.Item name="codigo" label="Código" rules={[{ required: true, message: "Ingresá el código" }]}>
+              <Input prefix={<SafetyOutlined />} placeholder="123456" autoFocus autoComplete="one-time-code" inputMode="numeric" />
+            </Form.Item>
+            {error && <Alert type="error" showIcon title={error} />}
+            <Button type="primary" size="large" htmlType="submit" block loading={enviando}>Verificar</Button>
+            <Button type="link" block onClick={() => { setTicket(null); setError(""); }}>Volver</Button>
+          </Form>
+        ) : (
+        <>
         {/* Cambia entre las rutas /login y /registro. */}
         <Segmented
           size="large"
@@ -133,6 +164,8 @@ export default function Acceso({ modo }) {
             {esLogin ? "Ingresar" : "Crear cuenta"}
           </Button>
         </Form>
+        </>
+        )}
       </div>
     </div>
   );

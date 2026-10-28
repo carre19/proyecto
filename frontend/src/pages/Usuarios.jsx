@@ -1,3 +1,5 @@
+import { SafetyCertificateOutlined } from "@ant-design/icons";
+import { App, Button, Popconfirm } from "antd";
 import PaginaCrud from "../components/PaginaCrud.jsx";
 import Estado from "../components/Estado.jsx";
 import { usuariosApi } from "../api/plataforma.js";
@@ -13,6 +15,8 @@ const config = {
   api: usuariosApi,
   id: "id_usuario",
   sinEliminar: true,
+  // Un admin que perdió el celular y los códigos de recuperación: el superadmin le restablece la verificación en dos pasos.
+  acciones: (u) => ["admin", "superadmin"].includes(u.rol) && <RestablecerVerificacion usuario={u} />,
   buscar: (u) => `${u.nombre_completo} ${u.email} ${ROLES[u.rol]} ${u.boliches.map((b) => b.nombre).join(" ")}`,
   columnas: [
     { titulo: "Nombre", render: (u) => u.nombre_completo },
@@ -40,6 +44,16 @@ const config = {
     },
   ],
 };
+
+function RestablecerVerificacion({ usuario }) {
+  const { message } = App.useApp();
+  return (
+    <Popconfirm title={`¿Restablecer la verificación en dos pasos de ${usuario.nombre_completo}?`} description="Va a tener que volver a activarla la próxima vez que entre." okText="Restablecer" cancelText="No"
+      onConfirm={() => usuariosApi.resetear2fa(usuario.id_usuario).then(() => message.success("Verificación restablecida")).catch((e) => message.error(e.response?.data?.mensaje ?? "No se pudo restablecer"))}>
+      <Button type="text" icon={<SafetyCertificateOutlined />} title="Restablecer la verificación en dos pasos" aria-label="Restablecer la verificación en dos pasos" />
+    </Popconfirm>
+  );
+}
 
 export default function Usuarios() {
   return <PaginaCrud config={config} />;
