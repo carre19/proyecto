@@ -89,3 +89,13 @@ export const puertaApi = {
   resumen: (idBoliche, idEvento) => api.get(`${puerta(idBoliche, idEvento)}/resumen`).then((res) => res.data),
   accesos: (idBoliche, idEvento) => api.get(`${puerta(idBoliche, idEvento)}/accesos`).then((res) => res.data),
 };
+
+// Pagos (fase 3): la cuenta donde se cobra, los pagos (en especial los que hay que revisar) y los avisos al cliente.
+export const pagosApi = {
+  cuenta: (idBoliche) => api.get(`/boliches/${idBoliche}/cuenta-cobro`).then((res) => res.data),
+  guardarCuenta: (idBoliche, datos) => api.put(`/boliches/${idBoliche}/cuenta-cobro`, datos).then((res) => res.data),
+  listar: (idBoliche, estado) => api.get(`/boliches/${idBoliche}/pagos`, { params: { estado } }).then((res) => res.data),
+  resolver: (idBoliche, idPago, detalle) => api.put(`/boliches/${idBoliche}/pagos/${idPago}/resolver`, { detalle }).then((res) => res.data),
+  reactivar: (idBoliche, idPago) => api.put(`/boliches/${idBoliche}/pagos/${idPago}/reactivar`).then((res) => res.data),
+  avisos: (idBoliche) => api.get(`/boliches/${idBoliche}/notificaciones`).then((res) => res.data),
+};

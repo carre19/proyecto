@@ -48,6 +48,10 @@ export const comprar = async (req, res) => {
         await liberarVencidas(pool);
         const evento = await eventoVendible(req.params.subdominio, idEvento);
         if (!evento) return res.status(404).json({ mensaje: "ese evento no existe o ya no está a la venta" });
+        // Sin una cuenta donde cobrar, el cliente no tendría a dónde transferir: ese boliche vende solo en la puerta.
+        if ((await pool.query(`SELECT 1 FROM boliche_cuenta_cobro WHERE id_boliche = $1`, [evento.id_boliche])).rows.length === 0) {
+            return res.status(409).json({ mensaje: "este boliche todavía no recibe pagos desde la página: las entradas se pagan en la puerta" });
+        }
 
         await cliente.query("BEGIN");
         const compra = await crearCompra(cliente, {
@@ -81,7 +85,12 @@ export const verCompra = async (req, res) => {
         const compra = (await pool.query(`${SELECT_COMPRA_PUBLICA} WHERE c.token_publico = $1`, [String(req.params.token)])).rows[0];
         if (!compra) return res.status(404).json({ mensaje: "no encontramos esa compra" });
 
-        res.json({ ...datosCompra(compra, await entradasDe(pool, compra.id_compra, { conCodigo: true })), evento: compra.evento, fecha_hora: compra.fecha_hora, boliche: compra.boliche, subdominio: compra.subdominio });
+        // Mientras espera el pago, se le muestra a dónde transferir.
+        const cuenta = compra.estado === "pendiente"
+            ? (await pool.query(`SELECT titular, banco, alias, cbu, instrucciones FROM boliche_cuenta_cobro WHERE id_boliche = $1`, [compra.id_boliche])).rows[0] ?? null
+            : null;
+
+        res.json({ ...datosCompra(compra, await entradasDe(pool, compra.id_compra, { conCodigo: true })), evento: compra.evento, fecha_hora: compra.fecha_hora, boliche: compra.boliche, subdominio: compra.subdominio, cuenta_cobro: cuenta });
     } catch (error) {
         console.error(error);
         res.status(500).json({ mensaje: "no se pudo obtener la compra" });

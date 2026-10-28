@@ -7,6 +7,10 @@ import publicoRoutes from "./routes/publico.routes.js";
 import bolicheRoutes from "./routes/boliche.routes.js";
 import usuarioRoutes from "./routes/usuario.routes.js";
 import clienteRoutes from "./routes/cliente.routes.js";
+import pagoRoutes from "./routes/pago.routes.js";
+import pool from "./data/db.js";
+import { despacharPendientes } from "./utils/notificaciones.js";
+import { liberarVencidas } from "./utils/compras.js";
 
 // Sin JWT_SECRET no se pueden firmar sesiones: mejor frenar al arrancar con un aviso claro que fallar al iniciar sesión.
 if (!process.env.JWT_SECRET) {
@@ -18,7 +22,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: process.env.FRONTEND_URL }));
-app.use(express.json());
+// Se guarda el cuerpo original: el aviso de pago va firmado y la firma se calcula sobre esos bytes exactos.
+app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 
 // Imágenes subidas: públicas (se ven en la página de cada boliche), sin listar carpetas y sin que el navegador adivine el tipo.
 app.use(URL_UPLOADS, express.static(DIR_UPLOADS, {
@@ -33,6 +38,7 @@ app.use("/api/publico", publicoRoutes);
 app.use("/api/boliches", bolicheRoutes);
 app.use("/api/usuarios", usuarioRoutes);
 app.use("/api/cliente", clienteRoutes);
+app.use("/api/pagos", pagoRoutes);
 
 app.use((req, res) => {
     res.status(404).json({ mensaje: "Ruta no encontrada" });
@@ -53,3 +59,10 @@ app.use((error, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`Servidor en http://localhost:${PORT}`);
 });
+
+// Tareas periódicas: enviar los avisos pendientes y liberar las compras que no se pagaron a tiempo.
+// Se pueden apagar con TAREAS_AUTO=false (por ejemplo, para correr varias copias del servidor y que lo haga una sola).
+if (process.env.TAREAS_AUTO !== "false") {
+    setInterval(() => despacharPendientes(pool).catch((e) => console.error("Avisos:", e.message)), 15 * 1000).unref();
+    setInterval(() => liberarVencidas(pool).catch((e) => console.error("Vencimientos:", e.message)), 60 * 1000).unref();
+}

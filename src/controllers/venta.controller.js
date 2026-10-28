@@ -1,5 +1,7 @@
 import pool from "../data/db.js";
-import { METODOS_PUERTA, crearCompra, entradasDe, liberarVencidas, marcarPagada, puedeVerDni, sincronizarAgotadas, validarContacto, validarItems } from "../utils/compras.js";
+import { METODOS_PUERTA, crearCompra, entradasDe, liberarVencidas, puedeVerDni, sincronizarAgotadas, validarContacto, validarItems } from "../utils/compras.js";
+import { confirmarCompra } from "../utils/pagos.js";
+import { despacharPendientes } from "../utils/notificaciones.js";
 import { parseId } from "../utils/validaciones.js";
 import { responderErrorDeBase } from "../utils/usuarios.js";
 import { datosCompra } from "./compra.controller.js";
@@ -83,22 +85,27 @@ const compraDelBoliche = async (req, res) => {
     return compra;
 };
 
-// PUT /boliches/:id/compras/:idCompra/pagar — confirma a mano que el pago llegó (el automático llega con la fase 3).
+const enviarAvisos = () => despacharPendientes(pool).catch((error) => console.error("No se pudieron enviar los avisos:", error.message));
+
+// PUT /boliches/:id/compras/:idCompra/pagar {metodo_pago?} — confirma a mano que el pago llegó (si no, lo confirma solo el aviso del banco).
 export const pagarCompra = async (req, res) => {
     const cliente = await pool.connect();
     try {
         const compra = await compraDelBoliche(req, res);
         if (!compra) return;
         await liberarVencidas(pool);
+        const metodo = req.body?.metodo_pago ?? "transferencia";
+        if (!["transferencia", "efectivo", "qr"].includes(metodo)) return res.status(400).json({ mensaje: "el metodo de pago debe ser transferencia, efectivo o qr" });
 
         await cliente.query("BEGIN");
-        const pagada = await marcarPagada(cliente, compra.id_compra, null);
+        const pagada = await confirmarCompra(cliente, compra.id_compra, { metodo, origen: "manual", idUsuario: req.usuario.id });
         if (!pagada) {
             await cliente.query("ROLLBACK");
             const actual = (await pool.query(`SELECT estado FROM compra WHERE id_compra = $1`, [compra.id_compra])).rows[0].estado;
             return res.status(409).json({ mensaje: actual === "cancelada" ? "la compra venció o fue cancelada: el cliente tiene que comprar de nuevo" : "esa compra ya estaba paga" });
         }
         await cliente.query("COMMIT");
+        enviarAvisos();
 
         res.json(datosCompra(pagada, await entradasDe(pool, pagada.id_compra, { verDni: puedeVerDni(req.usuario.rol) })));
     } catch (error) {
@@ -155,9 +162,10 @@ export const ventaPuerta = async (req, res) => {
             boliche: req.boliche, evento, items, canal: "puerta", metodo: req.body.metodo_pago, contacto,
             idVendedor: req.usuario.id, idRrpp: req.usuario.rol === "rrpp" ? req.usuario.id : null,
         });
-        const pagada = await marcarPagada(cliente, compra.id_compra, req.body.metodo_pago);
+        const pagada = await confirmarCompra(cliente, compra.id_compra, { metodo: req.body.metodo_pago, origen: "puerta", idUsuario: req.usuario.id });
         await sincronizarAgotadas(cliente, req.boliche.id_boliche, evento.id_evento);
         await cliente.query("COMMIT");
+        enviarAvisos();
 
         res.status(201).json(datosCompra(pagada, await entradasDe(pool, pagada.id_compra, { verDni: puedeVerDni(req.usuario.rol), conCodigo: true })));
     } catch (error) {

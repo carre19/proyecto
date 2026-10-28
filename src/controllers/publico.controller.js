@@ -43,8 +43,10 @@ export const verBoliche = async (req, res) => {
     ]);
 
     const porEvento = (filas, idEvento) => filas.filter((f) => f.id_evento === idEvento).map(({ id_evento, ...resto }) => resto);
+    const cuenta = (await pool.query(`SELECT 1 FROM boliche_cuenta_cobro WHERE id_boliche = $1`, [id])).rows.length > 0;
     res.json({
       ...boliche,
+      acepta_pagos_online: cuenta,
       fotos: fotos.rows,
       tema: { claro: tema.claro, oscuro: tema.oscuro },
       bebidas: bebidas.rows,

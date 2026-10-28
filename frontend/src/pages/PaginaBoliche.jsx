@@ -154,7 +154,7 @@ export default function PaginaBoliche() {
                             </li>
                           ))}
                         </ul>
-                        {hayEntradasDisponibles(e) && <Button type="primary" shape="round" onClick={() => setComprando(e)}>Comprar entradas</Button>}
+                        {hayEntradasDisponibles(e) && boliche.acepta_pagos_online && <Button type="primary" shape="round" onClick={() => setComprando(e)}>Comprar entradas</Button>}
                       </div>
                     )}
 
@@ -179,7 +179,7 @@ export default function PaginaBoliche() {
               ))}
             </div>
           )}
-          <p className="bol-aviso">Pagás desde la página por transferencia (precio online). Si no, en la puerta se paga el precio de puerta. La reserva de mesas VIP llega pronto.</p>
+          <p className="bol-aviso">{boliche.acepta_pagos_online ? "Pagás desde la página por transferencia (precio online). Si no, en la puerta se paga el precio de puerta." : "Las entradas se pagan en la puerta (precio de puerta)."} La reserva de mesas VIP llega pronto.</p>
         </section>
 
         {boliche.mesas_vip.length > 0 && (

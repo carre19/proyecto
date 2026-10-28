@@ -106,4 +106,13 @@ SELECT e.id_boliche, e.id_evento, m.id_mesa, CASE WHEN m.nombre = 'Mesa 1' THEN 
   JOIN public.mesa_vip m ON m.id_boliche = e.id_boliche AND m.nombre IN ('Mesa 1', 'Mesa 2')
  WHERE e.nombre = 'Noche Electrónica';
 
+-- ---------- Fase 3: cuenta donde cobra cada boliche (para recibir transferencias desde la página) ----------
+INSERT INTO public.boliche_cuenta_cobro (id_boliche, titular, banco, alias, cbu, instrucciones)
+SELECT b.id_boliche, c.titular, c.banco, c.alias, c.cbu, 'Transferí el total y poné el código de referencia en el concepto.'
+  FROM public.boliche b
+  JOIN (VALUES
+    ('boliche-uno', 'Boliche Uno S.R.L.', 'Banco Galicia', 'boliche.uno.mp', '0070000000000000000011'),
+    ('bar-dos', 'Bar Dos S.A.', 'Mercado Pago', 'bar.dos.cobros', NULL)
+  ) AS c(sub, titular, banco, alias, cbu) ON c.sub = b.subdominio;
+
 COMMIT;

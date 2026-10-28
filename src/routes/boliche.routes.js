@@ -8,6 +8,7 @@ import { borrarImagenMesa, crearMesa, editarMesa, eliminarMesa, listarMesas, lis
 import { guardarTema, restablecerTema, verTema } from "../controllers/tema.controller.js";
 import { recibirImagen } from "../middleware/imagen.js";
 import { cancelarCompra, listarVentas, pagarCompra, ventaPuerta } from "../controllers/venta.controller.js";
+import { guardarCuentaCobro, listarNotificaciones, listarPagos, reactivarCompra, resolverPago, verCuentaCobro } from "../controllers/pago.controller.js";
 import { buscarPorDni, escanear, reingreso, resumenPuerta, ultimosAccesos } from "../controllers/puerta.controller.js";
 import { crearMiembro, darDeBaja, editarMiembro, listarEquipo } from "../controllers/equipo.controller.js";
 import { borrarImagenEvento, crearEvento, editarEvento, eliminarEvento, listarEventos, subirImagenEvento, verEvento } from "../controllers/evento.controller.js";
@@ -95,6 +96,15 @@ delBoliche.post("/eventos/:idEvento/puerta/buscar", equipoCompleto, buscarPorDni
 delBoliche.post("/eventos/:idEvento/puerta/reingreso", equipoCompleto, reingreso);
 delBoliche.get("/eventos/:idEvento/puerta/resumen", equipoCompleto, resumenPuerta);
 delBoliche.get("/eventos/:idEvento/puerta/accesos", equipoCompleto, ultimosAccesos);
+
+// Pagos (fase 3): la cuenta donde se cobra, los pagos (en especial los que hay que revisar) y los avisos enviados.
+// Los gestionan el superadmin, el admin y el manager; solo el admin y el superadmin cambian la cuenta de cobro.
+delBoliche.get("/cuenta-cobro", gestionaPagos, verCuentaCobro);
+delBoliche.put("/cuenta-cobro", edita, guardarCuentaCobro);
+delBoliche.get("/pagos", gestionaPagos, listarPagos);
+delBoliche.put("/pagos/:idPago/resolver", gestionaPagos, resolverPago);
+delBoliche.put("/pagos/:idPago/reactivar", gestionaPagos, reactivarCompra);
+delBoliche.get("/notificaciones", gestionaPagos, listarNotificaciones);
 
 // Flyer del evento: lo cambia quien puede editar el evento (el manager, solo los suyos).
 delBoliche.post("/eventos/:idEvento/imagen", soloRoles(SUPERADMIN, ADMIN, MANAGER), recibirImagen, subirImagenEvento);

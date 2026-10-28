@@ -1,4 +1,5 @@
-import { Alert, Button, Result, Skeleton, Space, Tag } from "antd";
+import { CopyOutlined } from "@ant-design/icons";
+import { Alert, App, Button, Card, Descriptions, Result, Skeleton, Space, Tag } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { comprasApi } from "../api/plataforma.js";
@@ -8,10 +9,22 @@ import { fechaHora, moneda } from "../utils/formato.js";
 
 const ESTADO = { pendiente: ["gold", "Esperando el pago"], pagada: ["green", "Pagada"], cancelada: ["red", "Cancelada o vencida"] };
 
+// Un dato que se copia con un click (alias, CBU, referencia).
+const Copiable = ({ valor, aviso }) => (
+  <Button
+    size="small"
+    icon={<CopyOutlined />}
+    onClick={() => navigator.clipboard?.writeText(valor).then(() => aviso.success("Copiado"), () => aviso.info(valor))}
+  >
+    {valor}
+  </Button>
+);
+
 // Página de una compra (/compra/:token): quien tiene el link la ve sin necesidad de una cuenta.
 // Pendiente: cuánto y cómo pagar (se actualiza sola cuando llega el pago). Pagada: los QR, uno por persona.
 export default function Compra() {
   const { token } = useParams();
+  const { message } = App.useApp();
   const [compra, setCompra] = useState(null);
   const [noExiste, setNoExiste] = useState(false);
 
@@ -60,6 +73,24 @@ export default function Compra() {
               </>
             }
           />
+        )}
+        {compra.estado === "pendiente" && compra.cuenta_cobro && (
+          <Card variant="borderless" title="Datos para transferir">
+            <Descriptions
+              size="small"
+              column={{ xs: 1, sm: 2 }}
+              items={[
+                { key: "titular", label: "Titular", children: compra.cuenta_cobro.titular },
+                ...(compra.cuenta_cobro.banco ? [{ key: "banco", label: "Banco", children: compra.cuenta_cobro.banco }] : []),
+                ...(compra.cuenta_cobro.alias ? [{ key: "alias", label: "Alias", children: <Copiable valor={compra.cuenta_cobro.alias} aviso={message} /> }] : []),
+                ...(compra.cuenta_cobro.cbu ? [{ key: "cbu", label: "CBU", children: <Copiable valor={compra.cuenta_cobro.cbu} aviso={message} /> }] : []),
+                { key: "monto", label: "Monto", children: <strong>{moneda(compra.total)}</strong> },
+                { key: "ref", label: "Referencia", children: <Copiable valor={compra.referencia} aviso={message} /> },
+              ]}
+            />
+            {compra.cuenta_cobro.instrucciones && <p className="muted">{compra.cuenta_cobro.instrucciones}</p>}
+            <p className="muted">Apenas llegue el pago se confirma solo y esta página te muestra los QR (también te avisamos por WhatsApp o email).</p>
+          </Card>
         )}
         {compra.estado === "cancelada" && <Alert type="error" showIcon title="Esta compra se canceló o venció." description="Las entradas se liberaron. Podés volver a comprar." />}
         {compra.estado === "pagada" && <Alert type="success" showIcon title="Pago confirmado" description="Presentá el QR en la puerta. Cada QR sirve una sola vez y la entrada es personal: no se puede pasar a otra persona." />}
