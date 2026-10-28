@@ -2,7 +2,7 @@
 
 Fuente de esta documentación: la página de Notion **"Proyecto nuestro"** (6 de octubre de 2026, @Gianluca). Todo lo que figura en la sección 1 es lo que dice esa página; lo que decidimos nosotros al implementarlo está en la sección 2 y lo que sigue sin definir, en la sección 4.
 
-- **Estado actual:** **fase 1 terminada** (base de datos, API y front de los 5 roles). **Fase 1B (boliches funcionales): base de datos y API terminadas y probadas; el front está a medio hacer** (ver 6.1B). La fase 2 (entradas con compra y QR) es la siguiente. El front **conserva su estilo actual**.
+- **Estado actual:** **fase 1 terminada** (base de datos, API y front de los 5 roles). **Fase 1B (boliches funcionales) terminada: base de datos, API y front** (quedan ajustes menores, ver 6.1B). La fase 2 (entradas con compra y QR) es la siguiente. El front **conserva su estilo actual**.
 - **Rama:** todo el trabajo está en `main` (no hay otras ramas).
 - **Base de datos:** PostgreSQL local administrada con pgAdmin 4 (ver "Puesta en marcha").
 - **Tecnología:** React + Vite en el front; Node.js + Express + PostgreSQL en el back; un VPS para correr todo.
@@ -251,7 +251,7 @@ Estas decisiones no están en la página de Notion: las tomamos para poder avanz
 |---|---|---|
 | **0** | Documentación en este README, copia del proyecto con PostgreSQL local | ✅ Hecha |
 | **1** | Esquema multi-boliche; los 5 roles con su login; **panel del superadmin** (boliches y sus admins, usuarios); **panel del admin** (sus boliches, equipo y eventos de cada noche); **panel del manager** (su equipo y eventos); **página pública del boliche**; pruebas de que cada local ve únicamente lo suyo. Todo con el estilo actual del front | ✅ Terminada: base de datos, API y front, probados |
-| **1B** | Boliches funcionales: ficha del local (descripción, ubicación, capacidad, fotos con portada), **entradas por evento** (tandas y VIP con precio virtual y de puerta, cupo y estado), **carta de bebidas**, **mesas VIP**, **colores propios** del boliche (claro y oscuro) y página pública completa | 🟡 Base de datos y API listas y probadas (291 checks); front: faltan las pestañas y la página pública nueva |
+| **1B** | Boliches funcionales: ficha del local (descripción, ubicación, capacidad, fotos con portada), **entradas por evento** (tandas y VIP con precio virtual y de puerta, cupo y estado), **carta de bebidas**, **mesas VIP**, **colores propios** del boliche (claro y oscuro) y página pública completa | ✅ Terminada: base de datos y API (291 checks) y front probado en navegador; ajustes menores en 6.1B |
 | **2** | Entradas: tandas, VIP, precios virtual y de puerta, capacidad; compra con nombre, apellido y DNI; QR de un solo uso y control en puerta | ⏳ |
 | **3** | Pagos: confirmación automática de la transferencia, avisos por WhatsApp y Gmail, comisión de la plataforma (6 %) | ⏳ Depende de definiciones |
 | **4** | RRPP: alta y asignación, talonarios con link propio, listas de invitados, comisión, rankings y resultados | ⏳ |
@@ -316,7 +316,7 @@ Para crear un superadmin real (sin los datos de prueba): `npm run crear-superadm
 
 # 6. Estado de avance
 
-Se actualiza con cada cambio importante. Última actualización: fase 1B con base de datos y API terminadas; front en curso.
+Se actualiza con cada cambio importante. Última actualización: fase 1B terminada (base de datos, API y front).
 
 ## 6.1 Lo que está hecho
 
@@ -350,14 +350,21 @@ Se actualiza con cada cambio importante. Última actualización: fase 1B con bas
 - **Base de datos:** tablas `boliche_foto`, `tipo_entrada`, `bebida`, `mesa_vip`, `evento_mesa_vip` y `boliche_tema`; `evento.imagen`; triggers de máximo 10 fotos y de cupos contra capacidad. Datos de prueba con entradas, bebidas y mesas. Migración `database/migraciones/fase_1b.sql` (idempotente, probada dos veces sobre una base de la fase 1: pasa las fotos viejas a `boliche_foto`).
 - **API:** fotos con portada, entradas por evento, bebidas con imagen, mesas VIP con imagen y las que ofrece cada evento, colores del boliche, y la página pública con todo junto (ver 7.1). Imágenes de eventos (flyer).
 - **Pruebas: 291 checks, todos OK** — `pruebas/api_plataforma.py` (82), `pruebas/api_imagenes.py` (42) y `pruebas/api_fase1b.py` (167: aislamiento entre boliches, permisos por rol, cupos vs. capacidad, nombres únicos, contraste de colores, archivos falsos, qué muestra el público).
-- **Front (piezas listas):** clientes HTTP nuevos (`api/plataforma.js`), reglas de contraste (`utils/colores.js`), `TemaBoliche` (colores propios del boliche con Ant Design aislado), `AccionesImagen`, `BotonesSesion`, formularios con mínimo/máximo (latitudes negativas) y `PaginaCrud` con `alCargar`. Las fotos del panel y de `/explorar` ya usan el modelo nuevo (portada y galería); el front compila.
+- **Front del panel** (`frontend/src/components/boliche/`): la ficha del boliche ahora tiene las pestañas **Eventos, Entradas, Bebidas, Mesas VIP, Diseño, Equipo y Datos del local**.
+  - **Entradas:** se elige el evento y se cargan tandas y VIP (precio online y de puerta, cupo, estado); muestra cuántos cupos se repartieron de la capacidad del boliche, y avisa si falta cargar la capacidad.
+  - **Bebidas:** alta, edición y baja de cada bebida con su foto; "fuera de la carta" la oculta del público sin borrarla.
+  - **Mesas VIP:** catálogo con fotos y, por evento, qué mesas ofrece y si están disponibles o reservadas.
+  - **Diseño:** editor de los 4 colores en modo oscuro y claro, con vista previa en vivo, aviso de contraste (mismas reglas que el back) y botón para volver al negro y dorado.
+  - **Datos del local:** latitud y longitud (con enlace al mapa), capacidad, y en las fotos la etiqueta de portada y el botón para elegirla.
+  - Admin y superadmin editan; manager y RRPP solo ven. El panel conserva el estilo griego de la app.
+- **Página pública `/b/:subdominio`** (`pages/PaginaBoliche.jsx`, estilos en `styles/boliche.css`): diseño propio del boliche, negro y dorado por defecto o los colores que eligió. Abre en modo oscuro y tiene su botón claro/oscuro (alterna solo esa página, no la app). Muestra portada, capacidad, ubicación y redes, galería, próximos eventos con sus entradas (precio online y de puerta, disponible, agotada o no disponible) y sus mesas VIP, las mesas VIP del local y la carta de bebidas por categoría. `/explorar` usa la portada de cada boliche.
+- **Probado en un navegador real** con la cuenta de un admin: página pública en los dos modos y cada pestaña del panel (el servidor de desarrollo se levanta con la base migrada: `plataforma` en el Docker local).
 
-**Falta (front de la fase 1B)**
-- [ ] Pestañas del panel del boliche: **Entradas** (por evento, con cupos usados vs. capacidad), **Bebidas** (con imagen), **Mesas VIP** (catálogo y las que ofrece cada evento) y **Diseño** (editor de colores con vista previa y aviso de contraste). Admin y superadmin editan; manager y RRPP ven.
-- [ ] Datos del local: editar latitud y longitud, y botón "hacer portada" en las fotos.
-- [ ] **Página pública `/b/:subdominio`** con el diseño propio del boliche: abre en modo oscuro con botón claro/oscuro, portada, capacidad, ubicación, galería, eventos con sus entradas y mesas, mesas VIP y carta por categoría. Hoy muestra la ficha, las fotos y los eventos; el JSON del back ya trae todo lo demás.
-- [ ] Estilos `styles/boliche.css` (negro y dorado) y prueba en navegador real en los dos modos y en celular.
-- [ ] Confirmar con el equipo la tipografía de la sección y el alcance del diseño negro y dorado (¿solo la página pública o también el panel?).
+**Falta / mejoras menores de la fase 1B**
+- [ ] Probar las altas desde los formularios del panel (hoy están probadas en la API con 167 checks y la pantalla se vio en el navegador) y la subida de fotos desde la pantalla.
+- [ ] Revisar el panel y la página pública en celular (los estilos ya tienen reglas para pantallas chicas, falta verlos).
+- [ ] Confirmar con el equipo la tipografía de la sección (hoy la misma de la app) y si el negro y dorado alcanza solo a la página pública (como está hoy) o también al panel.
+- [ ] Al entrar a Entradas o Mesas VIP, el evento elegido por defecto es el primero de la lista (el de fecha más lejana); conviene elegir el próximo.
 
 ## 6.2 Lo que falta de la fase 1
 
@@ -452,5 +459,8 @@ Qué se hizo y cuándo, en orden. Se agrega una línea por cada cambio important
 | 2026-10-27 | **Fase 1B, API:** controladores y rutas de fotos, entradas, bebidas, mesas VIP y colores; página pública completa; flyer de eventos |
 | 2026-10-27 | **Pruebas de la fase 1B:** `api_fase1b.py` (167 checks) y `api_imagenes.py` actualizado (42); con la fase 1 suman 291, todas OK |
 | 2026-10-27 | Corrección: el servidor se caía si Postgres cortaba una conexión inactiva; el pool ahora lo registra y sigue. También se corrigió `cargar_base.sh`, que chequeaba una tabla del sistema anterior |
-| 2026-10-27 | **Front 1B (parcial):** clientes HTTP, reglas de contraste, `TemaBoliche`, fotos con portada en el panel y en `/explorar`. Quedan las pestañas, el editor de colores y la página pública nueva (ver 6.1B) |
-| *Próximo* | **Terminar el front de la fase 1B** (ver 6.1B) y después la **fase 2:** tandas de entradas y VIP, precios virtual y de puerta, compra con nombre, apellido y DNI, y QR de un solo uso |
+| 2026-10-27 | **Front 1B (base):** clientes HTTP, reglas de contraste, `TemaBoliche` (colores propios con Ant Design aislado), fotos con portada en el panel y en `/explorar` |
+| 2026-10-28 | Se levanta la app para probar: migración de la base local (`plataforma`) con los datos demo de la 1B, back en el puerto 3001 y front en el 5174 |
+| 2026-10-28 | **Front 1B:** pestañas Entradas, Bebidas, Mesas VIP y Diseño en el panel del boliche; latitud, longitud y portada en Datos del local; botón de imagen compartido (`AccionesImagen`) |
+| 2026-10-28 | **Front 1B:** página pública del boliche con su diseño propio (negro y dorado, modo claro/oscuro), entradas, mesas VIP y carta. Probado en navegador; se corrigieron acciones cortadas en las tablas |
+| *Próximo* | **Fase 2:** tandas de entradas y VIP, precios virtual y de puerta, compra con nombre, apellido y DNI, y QR de un solo uso |

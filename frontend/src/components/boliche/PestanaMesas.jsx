@@ -119,7 +119,7 @@ export default function PestanaMesas({ idBoliche }) {
         { titulo: "Personas", render: (m) => m.capacidad },
         { titulo: "Precio", render: (m) => moneda(m.precio) },
         { titulo: "Estado", render: (m) => <Estado estado={m.activa ? "Activa" : "Desactivada"} color={m.activa ? "var(--lime)" : "var(--muted)"} /> },
-        { titulo: "Descripción", render: (m) => m.descripcion ?? "—" },
+        { titulo: "Descripción", render: (m) => (m.descripcion ? <span className="celda-corta" title={m.descripcion}>{m.descripcion}</span> : "—") },
       ],
       campos: [
         { name: "nombre", label: "Nombre", required: true, full: true, ayuda: "Por ejemplo: Mesa 1, Palco." },

@@ -421,3 +421,26 @@
   top: 8px;
   left: 8px;
 }
+
+/* Las tarjetas de la ficha del boliche (datos, fotos, admins, mesas) quedan separadas entre sí. */
+.ficha-boliche {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Descripción larga en una tabla del panel: una sola línea con puntos suspensivos (el texto completo sale al pasar el mouse). */
+.celda-corta {
+  display: inline-block;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+/* Tablas dentro de las pestañas del boliche: celdas un poco más compactas para que entren todas las acciones de la fila. */
+.crud-embebido .ant-table-thead > tr > th,
+.crud-embebido .ant-table-tbody > tr > td {
+  padding-inline: 10px;
+}

@@ -36,7 +36,7 @@ export default function PestanaBebidas({ idBoliche }) {
         { titulo: "Categoría", render: (b) => b.categoria },
         { titulo: "Precio", render: (b) => moneda(b.precio) },
         { titulo: "Carta", render: (b) => <Estado estado={b.disponible ? "En la carta" : "Fuera de la carta"} color={b.disponible ? "var(--lime)" : "var(--muted)"} /> },
-        { titulo: "Descripción", render: (b) => b.descripcion ?? "—" },
+        { titulo: "Descripción", render: (b) => (b.descripcion ? <span className="celda-corta" title={b.descripcion}>{b.descripcion}</span> : "—") },
       ],
       campos: [
         { name: "categoria", label: "Categoría", required: true, ayuda: "Por ejemplo: Tragos, Cervezas, Botellas, Sin alcohol." },

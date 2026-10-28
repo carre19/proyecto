@@ -80,7 +80,7 @@ export default function PestanaEntradas({ boliche }) {
         <Alert type="warning" showIcon title="Este boliche todavía no tiene capacidad." description={permisos.puedeEditarLocal ? "Cargala en la pestaña Datos del local: sin ella no se pueden crear entradas." : "Pedile al admin que la cargue en Datos del local."} />
       ) : (
         <div>
-          <span className="muted">Cupos repartidos: {usados.toLocaleString("es-AR")} de {capacidad.toLocaleString("es-AR")} (capacidad del boliche) · quedan {Math.max(0, capacidad - usados).toLocaleString("es-AR")}</span>
+          <span className="muted">Cupos repartidos en este evento: {usados.toLocaleString("es-AR")} de {capacidad.toLocaleString("es-AR")} (capacidad del boliche) · quedan {Math.max(0, capacidad - usados).toLocaleString("es-AR")}</span>
           <Progress percent={porcentaje} showInfo={false} status={usados >= capacidad ? "exception" : "normal"} />
         </div>
       )}

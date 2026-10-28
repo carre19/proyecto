@@ -10,7 +10,9 @@ import SubirImagen from "./SubirImagen.jsx";
 export default function AccionesImagen({ imagen, onSubir, onBorrar, recargar }) {
   return (
     <>
-      <SubirImagen tipo="text" texto={imagen ? "Cambiar imagen" : "Imagen"} icono={<PictureOutlined />} onSubir={onSubir} alTerminar={recargar} />
+      <span title={imagen ? "Cambiar imagen" : "Subir imagen"}>
+        <SubirImagen tipo="text" texto="" icono={<PictureOutlined />} onSubir={onSubir} alTerminar={recargar} />
+      </span>
       {imagen && (
         <Popconfirm
           title="¿Quitar la imagen?"
