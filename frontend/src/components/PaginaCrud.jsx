@@ -20,7 +20,7 @@ import Topbar from "./Topbar.jsx";
 //   puedeCrear  -> (permisos) => bool; si es false no se muestra "Nuevo" (por defecto true)
 //   puedeEditar -> (permisos, item) => bool; si es false la fila no tiene editar ni eliminar (por defecto true)
 //   guardar   -> async (item | null, valores) para guardados especiales (ej. datos + roles); si no, crea/edita el recurso
-//   acciones  -> (item) => botones extra de la fila (ej. "Abrir boliche")
+//   acciones  -> (item, { recargar }) => botones extra de la fila (ej. "Abrir boliche", "Subir imagen")
 //   camposEdicion -> campos del formulario al EDITAR, si son otros que al crear (ej. el equipo: al crear se piden los datos de la persona, al editar solo la comisión)
 //   sinEliminar   -> true si el recurso no se borra (se desactiva)
 //   pie           -> contenido extra que va debajo de la tabla (por ejemplo, los paneles que llegan en otras fases)
@@ -68,7 +68,7 @@ export default function PaginaCrud({ config }) {
       align: "right",
       render: (_, item) => (
         <Space size={4} wrap={false}>
-          {acciones?.(item)}
+          {acciones?.(item, { recargar })}
           {puedeEditar(item) && (
           <>
           <Tooltip title="Editar">

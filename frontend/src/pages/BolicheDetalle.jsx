@@ -1,12 +1,13 @@
-import { ArrowLeftOutlined, GlobalOutlined, InstagramOutlined, WhatsAppOutlined } from "@ant-design/icons";
-import { Alert, App, Button, Card, Descriptions, Popconfirm, Result, Select, Skeleton, Space, Tabs, Tag } from "antd";
+import { ArrowLeftOutlined, DeleteOutlined, GlobalOutlined, InstagramOutlined, PictureOutlined, WhatsAppOutlined } from "@ant-design/icons";
+import { Alert, App, Button, Card, Descriptions, Empty, Image, Popconfirm, Result, Select, Skeleton, Space, Tabs, Tag } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { apiDeBoliche, bolichesApi, usuariosApi } from "../api/plataforma.js";
+import { apiDeBoliche, bolichesApi, imagenesApi, usuariosApi } from "../api/plataforma.js";
 import Estado from "../components/Estado.jsx";
 import FormModal from "../components/FormModal.jsx";
 import PaginaCrud from "../components/PaginaCrud.jsx";
 import Proximamente from "../components/Proximamente.jsx";
+import SubirImagen from "../components/SubirImagen.jsx";
 import Topbar from "../components/Topbar.jsx";
 import usePermisos from "../hooks/usePermisos.js";
 import { mensajeError } from "../services/api.js";
@@ -17,6 +18,9 @@ const ESTADOS_EVENTO = [{ value: "publicado", label: "Publicado" }, { value: "ca
 const COLOR_ESTADO_EVENTO = { publicado: "var(--lime)", cancelado: "var(--red)", finalizado: "var(--muted)" };
 const COLOR_ROL_EQUIPO = { rrpp_manager: "var(--violet)", rrpp: "var(--pink)" };
 const ROL_EQUIPO = { rrpp_manager: "RRPP manager", rrpp: "RRPP" };
+
+// Admin y superadmin editan cualquier evento del boliche; el manager, solo los que creó él.
+const puedeEditarEvento = (p, e) => p.esSuperadmin || p.esAdmin || (p.esManager && e.id_creador === p.yo);
 
 // Pestaña de eventos: los ven todos los del boliche; crean el superadmin, el admin y el manager (este solo edita los suyos).
 function PestanaEventos({ idBoliche }) {
@@ -48,8 +52,36 @@ function PestanaEventos({ idBoliche }) {
       // Solo el admin y el superadmin borran; el manager edita los eventos que creó él.
       sinEliminar: !(permisos.esSuperadmin || permisos.esAdmin),
       puedeCrear: (p) => p.puedeCrearEventos,
-      puedeEditar: (p, e) => p.esSuperadmin || p.esAdmin || (p.esManager && e.id_creador === p.yo),
+      puedeEditar: puedeEditarEvento,
+      // Subir, cambiar o quitar el flyer del evento: lo hace quien puede editar el evento.
+      acciones: (e, { recargar }) =>
+        puedeEditarEvento(permisos, e) && (
+          <>
+            <SubirImagen
+              tipo="text"
+              texto={e.imagen ? "Cambiar imagen" : "Imagen"}
+              icono={<PictureOutlined />}
+              onSubir={(archivo) => imagenesApi.subirImagenEvento(idBoliche, e.id_evento, archivo)}
+              alTerminar={recargar}
+            />
+            {e.imagen && (
+              <Popconfirm
+                title="¿Quitar la imagen del evento?"
+                okText="Quitar"
+                cancelText="Cancelar"
+                okButtonProps={{ danger: true }}
+                onConfirm={async () => {
+                  await imagenesApi.borrarImagenEvento(idBoliche, e.id_evento);
+                  await recargar();
+                }}
+              >
+                <Button type="text" danger icon={<DeleteOutlined />} aria-label="Quitar imagen" />
+              </Popconfirm>
+            )}
+          </>
+        ),
       columnas: [
+        { titulo: "Imagen", render: (e) => (e.imagen ? <Image src={e.imagen} alt={e.nombre} width={48} height={48} style={{ objectFit: "cover", borderRadius: 8 }} /> : "—") },
         { titulo: "Evento", render: (e) => e.nombre },
         { titulo: "Fecha y hora", render: (e) => fechaHora(e.fecha_hora) },
         { titulo: "Artistas", render: (e) => (e.artistas?.length ? e.artistas.join(", ") : "—") },
@@ -61,7 +93,7 @@ function PestanaEventos({ idBoliche }) {
       campos,
       camposEdicion: [...campos, { name: "estado", label: "Estado", type: "select", required: true, defecto: "publicado", options: ESTADOS_EVENTO }],
     };
-  }, [api, permisos.esSuperadmin, permisos.esAdmin]);
+  }, [api, idBoliche, permisos]);
 
   return <PaginaCrud config={config} />;
 }
@@ -201,6 +233,42 @@ function PestanaDatos({ boliche, recargar }) {
             { key: "descripcion", label: "Descripción", span: "filled", children: boliche.descripcion ?? "—" },
           ]}
         />
+      </Card>
+
+      <Card
+        variant="borderless"
+        title="Fotos del local"
+        extra={
+          permisos.puedeEditarLocal && (
+            <SubirImagen texto="Subir foto" onSubir={(archivo) => imagenesApi.subirFoto(boliche.id_boliche, archivo)} alTerminar={recargar} />
+          )
+        }
+      >
+        {boliche.fotos.length === 0 ? (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Todavía no hay fotos. Se muestran en la página pública del boliche." />
+        ) : (
+          <Image.PreviewGroup>
+            <div className="galeria-fotos">
+              {boliche.fotos.map((url) => (
+                <div key={url} className="galeria-foto">
+                  <Image src={url} alt={boliche.nombre} />
+                  {permisos.puedeEditarLocal && (
+                    <Popconfirm
+                      title="¿Borrar esta foto?"
+                      okText="Borrar"
+                      cancelText="Cancelar"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => accion(imagenesApi.borrarFoto(boliche.id_boliche, url), "Foto borrada")}
+                    >
+                      <Button className="galeria-borrar" shape="circle" danger icon={<DeleteOutlined />} aria-label="Borrar foto" />
+                    </Popconfirm>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Image.PreviewGroup>
+        )}
+        <p className="muted" style={{ marginTop: 12 }}>JPG, PNG o WebP, hasta 5 MB cada una y hasta 12 fotos.</p>
       </Card>
 
       {permisos.esSuperadmin && (

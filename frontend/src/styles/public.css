@@ -111,3 +111,22 @@
   width: 100%;
   border-radius: 12px;
 }
+
+/* Portada de un boliche en la lista y flyer de un evento en su página. */
+.boliche-portada,
+.evento-flyer {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  border-radius: 16px 16px 0 0;
+}
+
+.evento-flyer {
+  height: 220px;
+}
+
+/* Las tarjetas de la lista no se estiran: una con portada y otra sin portada conservan su alto. */
+.grilla-boliches {
+  align-items: start;
+}

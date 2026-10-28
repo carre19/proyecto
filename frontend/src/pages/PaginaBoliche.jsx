@@ -82,7 +82,7 @@ export default function PaginaBoliche() {
         ) : (
           <div className="grilla-boliches">
             {boliche.eventos.map((e) => (
-              <Card key={e.id_evento} variant="borderless">
+              <Card key={e.id_evento} variant="borderless" cover={e.imagen ? <img className="evento-flyer" src={e.imagen} alt={e.nombre} /> : undefined}>
                 <span className="eyebrow">{fechaHora(e.fecha_hora)}</span>
                 <h3>{e.nombre}</h3>
                 {e.artistas.length > 0 && <p>{e.artistas.join(" · ")}</p>}

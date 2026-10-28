@@ -419,3 +419,28 @@
 .topbar > span:first-child:empty {
   flex: 1;
 }
+
+/* Galería de fotos del local (pestaña de datos): cuadrícula con el botón de borrar sobre cada foto. */
+.galeria-fotos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.galeria-foto {
+  position: relative;
+}
+
+.galeria-foto .ant-image,
+.galeria-foto img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.galeria-borrar {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}

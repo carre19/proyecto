@@ -31,3 +31,14 @@ export const publicoApi = {
   boliches: () => api.get("/publico/boliches").then((res) => res.data),
   boliche: (subdominio) => api.get(`/publico/boliches/${subdominio}`).then((res) => res.data),
 };
+
+// Imágenes: el cuerpo de la petición es el archivo mismo (JPG, PNG o WebP, hasta 5 MB). El back reconoce el formato por su contenido.
+const subirArchivo = (url, archivo) =>
+  api.post(url, archivo, { headers: { "Content-Type": archivo.type }, timeout: 60000 }).then((res) => res.data);
+
+export const imagenesApi = {
+  subirFoto: (idBoliche, archivo) => subirArchivo(`/boliches/${idBoliche}/fotos`, archivo),
+  borrarFoto: (idBoliche, url) => api.delete(`/boliches/${idBoliche}/fotos`, { params: { url } }).then((res) => res.data),
+  subirImagenEvento: (idBoliche, idEvento, archivo) => subirArchivo(`/boliches/${idBoliche}/eventos/${idEvento}/imagen`, archivo),
+  borrarImagenEvento: (idBoliche, idEvento) => api.delete(`/boliches/${idBoliche}/eventos/${idEvento}/imagen`).then((res) => res.data),
+};
