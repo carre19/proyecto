@@ -43,14 +43,18 @@ ids = {b["nombre"]: b["id_boliche"] for b in UA1["boliches"]}; U = ids["Boliche 
 IMG = png()
 
 print("== Fotos del boliche ==")
-r = chk("el admin sube una foto PNG", pedir("POST", f"/boliches/{U}/fotos", IMG, TA1, "image/png"), 201, lambda d: len(d["fotos"]) == 1 and d["fotos"][0].startswith(f"/api/uploads/boliches/{U}/") and d["fotos"][0].endswith(".png"))
-url = r["fotos"][0]
+r = chk("el admin sube una foto PNG (la primera queda de portada)", pedir("POST", f"/boliches/{U}/fotos", IMG, TA1, "image/png"), 201, lambda d: len(d) == 1 and d[0]["es_portada"] and d[0]["url"].startswith(f"/api/uploads/boliches/{U}/") and d[0]["url"].endswith(".png"))
+url = r[0]["url"]; id_primera = r[0]["id_foto"]
 with urllib.request.urlopen(ORIGEN + url) as f:
     visto = f.read(); cab = f.headers
 print(("OK   " if visto == IMG else "FALLA"), "la foto se puede ver en su dirección y es idéntica a la subida"); fallas += [] if visto == IMG else ["ver foto"]
 print(("OK   " if cab.get("X-Content-Type-Options") == "nosniff" and cab.get("Content-Type") == "image/png" else "FALLA"), "se sirve como image/png y con nosniff"); fallas += [] if (cab.get("X-Content-Type-Options") == "nosniff" and cab.get("Content-Type") == "image/png") else ["cabeceras"]
-chk("la foto aparece en la página pública", pedir("GET", "/publico/boliches/boliche-uno"), 200, lambda d: url in d["fotos"])
-chk("el superadmin también puede subir", pedir("POST", f"/boliches/{U}/fotos", png(color=(0, 0, 255)), TS, "image/png"), 201, lambda d: len(d["fotos"]) == 2)
+chk("la foto aparece en la página pública", pedir("GET", "/publico/boliches/boliche-uno"), 200, lambda d: url in [f["url"] for f in d["fotos"]])
+r2 = chk("el superadmin también puede subir (la segunda NO es portada)", pedir("POST", f"/boliches/{U}/fotos", png(color=(0, 0, 255)), TS, "image/png"), 201, lambda d: len(d) == 2 and sum(f["es_portada"] for f in d) == 1)
+foto2 = [f for f in r2 if not f["es_portada"]][0]; id_segunda = foto2["id_foto"]; url_segunda = foto2["url"]
+chk("cambiar la portada deja una sola portada", pedir("PUT", f"/boliches/{U}/fotos/{id_segunda}", {"es_portada": True}, TA1), 200, lambda d: d[0]["id_foto"] == id_segunda and sum(f["es_portada"] for f in d) == 1)
+chk("la portada sale primera en el listado del admin", pedir("GET", f"/boliches/{U}/fotos", None, TA1), 200, lambda d: d[0]["es_portada"])
+chk("la lectura de las fotos también la ve el RRPP", pedir("GET", f"/boliches/{U}/fotos", None, TR), 200)
 
 print("== Archivos que NO son imágenes ==")
 chk("un HTML disfrazado de imagen (dice image/png)", pedir("POST", f"/boliches/{U}/fotos", b"<html><script>alert(1)</script></html>", TA1, "image/png"), 415)
@@ -66,17 +70,22 @@ chk("el manager NO sube fotos del local", pedir("POST", f"/boliches/{U}/fotos", 
 chk("el RRPP NO sube", pedir("POST", f"/boliches/{U}/fotos", IMG, TR, "image/png"), 403)
 chk("el cliente NO sube", pedir("POST", f"/boliches/{U}/fotos", IMG, TC, "image/png"), 403)
 chk("sin sesión", pedir("POST", f"/boliches/{U}/fotos", IMG, None, "image/png"), 401)
-chk("admin2 NO borra fotos de otro local", pedir("DELETE", f"/boliches/{U}/fotos?url={url}", None, TA2), 404)
+chk("admin2 NO borra fotos de otro local", pedir("DELETE", f"/boliches/{U}/fotos/{id_primera}", None, TA2), 404)
+chk("admin2 NO cambia la portada de otro local", pedir("PUT", f"/boliches/{U}/fotos/{id_primera}", {"es_portada": True}, TA2), 404)
 chk("no se puede 'editar' las fotos por el PUT del boliche", pedir("PUT", f"/boliches/{U}", {"fotos": ["https://malo.com/x.png"]}, TA1), 403)
-chk("no se borra una ruta ajena (otra carpeta)", pedir("DELETE", f"/boliches/{U}/fotos?url=/api/uploads/boliches/999/x.png", None, TA1), 404)
-chk("no se borra con trucos de ruta (../)", pedir("DELETE", f"/boliches/{U}/fotos?url=/api/uploads/boliches/{U}/../../../etc/passwd", None, TA1), 404)
+chk("no se borra una foto con un id que no es de este boliche", pedir("DELETE", f"/boliches/{U}/fotos/999999", None, TA1), 404)
+chk("el id de la foto debe ser un número (nada de rutas)", pedir("DELETE", f"/boliches/{U}/fotos/..%2F..%2Fetc%2Fpasswd", None, TA1), 400)
+chk("una foto de Bar Dos no se borra desde Boliche Uno", pedir("DELETE", f"/boliches/{U}/fotos/{pedir('POST', f'/boliches/{D}/fotos', png(color=(5, 5, 5)), TA1, 'image/png')[1][0]['id_foto']}", None, TA1), 404)
 
 print("== Límite de fotos y borrado ==")
-for _ in range(12 - 2): pedir("POST", f"/boliches/{U}/fotos", png(color=(1, 2, 3)), TA1, "image/png")
-chk("más de 12 fotos", pedir("POST", f"/boliches/{U}/fotos", IMG, TA1, "image/png"), 400)
-chk("el admin borra una foto", pedir("DELETE", f"/boliches/{U}/fotos?url={url}", None, TA1), 200, lambda d: url not in d["fotos"] and len(d["fotos"]) == 11)
+for _ in range(10 - 2): pedir("POST", f"/boliches/{U}/fotos", png(color=(1, 2, 3)), TA1, "image/png")
+chk("más de 10 fotos", pedir("POST", f"/boliches/{U}/fotos", IMG, TA1, "image/png"), 400)
+carpeta = os.path.join(os.environ.get("UPLOADS_DIR", "uploads"), "boliches", str(U))
+if os.path.isdir(carpeta):
+    n = len(os.listdir(carpeta)); print(("OK   " if n == 10 else "FALLA"), f"el intento de la foto 11 no dejó un archivo huérfano en disco ({n} archivos)"); fallas += [] if n == 10 else ["huérfano"]
+chk("el admin borra la foto portada", pedir("DELETE", f"/boliches/{U}/fotos/{id_segunda}", None, TA1), 200, lambda d: id_segunda not in [f["id_foto"] for f in d] and len(d) == 9 and sum(f["es_portada"] for f in d) == 1)
 try:
-    urllib.request.urlopen(ORIGEN + url); print("FALLA la foto borrada sigue viéndose"); fallas.append("archivo borrado")
+    urllib.request.urlopen(ORIGEN + url_segunda); print("FALLA la foto borrada sigue viéndose"); fallas.append("archivo borrado")
 except urllib.error.HTTPError as e:
     print(("OK   " if e.code == 404 else "FALLA"), f"[{e.code}] la foto borrada ya no se ve")
 

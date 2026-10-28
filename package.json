@@ -8,7 +8,9 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "crear-superadmin": "node scripts/crear_superadmin.js",
-    "prueba-api": "python3 pruebas/api_plataforma.py"
+    "prueba-api": "python3 pruebas/api_plataforma.py",
+    "prueba-imagenes": "python3 pruebas/api_imagenes.py",
+    "prueba-fase1b": "python3 pruebas/api_fase1b.py"
   },
   "license": "ISC",
   "dependencies": {
