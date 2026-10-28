@@ -1,0 +1,157 @@
+"""Pruebas de la fase 5: personal externo (fichas, contactos, historial y dotación por evento), proveedores, gastos, ingresos
+y los resúmenes en tres niveles (noche, boliche y admin con todos sus locales). Lo gestiona solo el admin (y el superadmin).
+Corre contra una base recién cargada:
+    API=http://localhost:3000/api python3 pruebas/api_fase5.py"""
+from comun import chk, entrar, fin, pedir, verdad
+
+TS, _ = entrar("superadmin@demo.com"); TA1, UA1 = entrar("admin1@demo.com"); TA2, UA2 = entrar("admin2@demo.com")
+TM, _ = entrar("manager1@demo.com"); TR, _ = entrar("rrpp1@demo.com"); TC, _ = entrar("cliente@demo.com")
+ids = {b["nombre"]: b["id_boliche"] for b in UA1["boliches"]}; U = ids["Boliche Uno"]; D = ids["Bar Dos"]; T3 = UA2["boliches"][0]["id_boliche"]
+pub = pedir("GET", "/publico/boliches/boliche-uno")[1]
+EV = next(e for e in pub["eventos"] if e["nombre"] == "Noche Electrónica"); RETRO = next(e for e in pub["eventos"] if e["nombre"] == "Fiesta Retro")
+ev_dos = pedir("GET", "/publico/boliches/bar-dos")[1]["eventos"][0]
+TANDA2 = next(t for t in EV["entradas"] if t["nombre"] == "Tanda 2")["id_tipo_entrada"]
+B = lambda ruta, m="GET", cuerpo=None, tk=TA1, b=U: pedir(m, f"/boliches/{b}/{ruta}", cuerpo, tk)
+
+# ---------------------------------------------------------------------------------------------------------
+print("== Quién puede entrar a esta parte ==")
+for ruta in ["personal", "proveedores", "gastos", "ingresos", "finanzas"]:
+    chk(f"{ruta}: el manager NO -> 403", B(ruta, tk=TM), 403)
+    chk(f"{ruta}: el RRPP NO -> 403", B(ruta, tk=TR), 403)
+    chk(f"{ruta}: el cliente NO -> 403", B(ruta, tk=TC), 403)
+    chk(f"{ruta}: el admin de otro boliche -> 404", B(ruta, tk=TA2), 404)
+    chk(f"{ruta}: el admin entra", B(ruta), 200)
+chk("el superadmin también entra", B("personal", tk=TS), 200)
+
+# ---------------------------------------------------------------------------------------------------------
+print("== Personal externo: fichas ==")
+chk("la lista de ejemplo tiene 4 personas con sus contactos", B("personal"), 200, lambda d: len(d) == 4 and any(p["nombre"] == "Nicolás" and len(p["contactos"]) == 2 for p in d))
+chk("filtrar por rol", B("personal?rol=barman"), 200, lambda d: [p["nombre"] for p in d] == ["Valeria"])
+p = chk("el admin crea una ficha con varios contactos", B("personal", "POST", {"nombre": "Tomás", "apellido": "Rivas", "rol_local": "guardarropa", "monto_cobro": 12000, "cobro_tipo": "por_hora", "notas": "Turno noche", "contactos": [{"tipo": "whatsapp", "valor": "351 900 0001"}, {"tipo": "email", "valor": "tomas@mail.com"}]}), 201,
+        lambda d: d["rol_local"] == "guardarropa" and d["cobro_tipo"] == "por_hora" and len(d["contactos"]) == 2 and d["activo"] and d["eventos"] == 0)
+chk("la ficha se puede completar con lo mínimo y después ir agregando", B("personal", "POST", {"nombre": "Lola", "apellido": "Gil", "rol_local": "mozo_vip"}), 201, lambda d: d["monto_cobro"] is None and d["cobro_tipo"] == "por_evento" and d["contactos"] == [])
+chk("rol inválido -> 400", B("personal", "POST", {"nombre": "X", "apellido": "Y", "rol_local": "pirata"}), 400)
+chk("sin nombre -> 400", B("personal", "POST", {"apellido": "Y", "rol_local": "barman"}), 400)
+chk("sin rol -> 400", B("personal", "POST", {"nombre": "X", "apellido": "Y"}), 400)
+chk("cobro negativo -> 400", B("personal", "POST", {"nombre": "X", "apellido": "Y", "rol_local": "barman", "monto_cobro": -1}), 400)
+chk("cobro con decimales -> 400", B("personal", "POST", {"nombre": "X", "apellido": "Y", "rol_local": "barman", "monto_cobro": 10.5}), 400)
+chk("tipo de cobro inválido -> 400", B("personal", "POST", {"nombre": "X", "apellido": "Y", "rol_local": "barman", "cobro_tipo": "a veces"}), 400)
+chk("contacto inválido en el alta -> 400", B("personal", "POST", {"nombre": "X", "apellido": "Y", "rol_local": "barman", "contactos": [{"tipo": "paloma", "valor": "x"}]}), 400)
+chk("una ficha con un contacto inválido no se crea a medias", B("personal?rol=barman"), 200, lambda d: [x["nombre"] for x in d] == ["Valeria"])
+chk("la ficha de otro boliche -> 404", B(f"personal/{p['id_personal']}", tk=TA2, b=T3), 404)
+chk("ver la ficha completa con su historial", B(f"personal/{p['id_personal']}"), 200, lambda d: d["historial"] == [] and d["total_pagado"] == 0 and len(d["contactos"]) == 2)
+chk("editar lo que cobra y las notas", B(f"personal/{p['id_personal']}", "PUT", {"monto_cobro": 15000, "notas": "Turno largo"}), 200, lambda d: d["monto_cobro"] == 15000 and d["notas"] == "Turno largo")
+chk("editar sin nada -> 400", B(f"personal/{p['id_personal']}", "PUT", {}), 400)
+c = chk("agregar un contacto más", B(f"personal/{p['id_personal']}/contactos", "POST", {"tipo": "instagram", "valor": "@tomas.rivas"}), 201)
+chk("contacto sin valor -> 400", B(f"personal/{p['id_personal']}/contactos", "POST", {"tipo": "email", "valor": ""}), 400)
+chk("quitar el contacto", B(f"personal/{p['id_personal']}/contactos/{c['id_contacto']}", "DELETE"), 200)
+chk("quitarlo de nuevo -> 404", B(f"personal/{p['id_personal']}/contactos/{c['id_contacto']}", "DELETE"), 404)
+chk("el admin de otro boliche no toca la ficha -> 404", B(f"personal/{p['id_personal']}", "PUT", {"notas": "x"}, TA2), 404)
+
+print("== Personal en cada evento: cuándo estuvo y cuánto cobró ==")
+gabriel = next(x for x in B("personal")[1] if x["nombre"] == "Gabriel")
+chk("el evento de ejemplo ya tiene a 2 personas con su pago", B(f"eventos/{EV['id_evento']}/personal"), 200, lambda d: len(d["asignados"]) == 2 and d["total_pagado"] == 25000 + 120000)
+chk("la dotación pedida y la asignada por rol", B(f"eventos/{EV['id_evento']}/personal"), 200, lambda d: {x["rol_local"]: (x["pedida"], x["asignada"]) for x in d["dotacion"]} == {"seguridad": (4, 1), "limpieza": (2, 0), "barman": (3, 0)})
+chk("sumar a una persona a otro evento con su pago", B(f"eventos/{RETRO['id_evento']}/personal/{p['id_personal']}", "PUT", {"monto_pagado": 13000, "nota": "Cerró la noche"}), 200)
+chk("cambiar lo que se le paga", B(f"eventos/{RETRO['id_evento']}/personal/{p['id_personal']}", "PUT", {"monto_pagado": 14000}), 200)
+chk("su ficha ahora muestra el historial y el total pagado", B(f"personal/{p['id_personal']}"), 200, lambda d: len(d["historial"]) == 1 and d["historial"][0]["monto_pagado"] == 14000 and d["total_pagado"] == 14000 and d["eventos"] == 1)
+chk("pago negativo -> 400", B(f"eventos/{RETRO['id_evento']}/personal/{p['id_personal']}", "PUT", {"monto_pagado": -5}), 400)
+chk("persona de otro boliche -> 404", B(f"eventos/{RETRO['id_evento']}/personal/999999", "PUT", {}), 404)
+chk("evento de otro boliche -> 404", B(f"eventos/{ev_dos['id_evento']}/personal/{p['id_personal']}", "PUT", {}), 404)
+chk("con historial no se borra -> 409", B(f"personal/{p['id_personal']}", "DELETE"), 409, lambda d: "desactivala" in d["mensaje"])
+chk("se desactiva", B(f"personal/{p['id_personal']}", "PUT", {"activo": False}), 200, lambda d: d["activo"] is False)
+chk("una persona desactivada no se suma a un evento -> 409", B(f"eventos/{EV['id_evento']}/personal/{p['id_personal']}", "PUT", {"monto_pagado": 1}), 409)
+chk("la lista de activos no la incluye", B("personal?activo=true"), 200, lambda d: all(x["id_personal"] != p["id_personal"] for x in d))
+chk("quitar a alguien del evento", B(f"eventos/{RETRO['id_evento']}/personal/{p['id_personal']}", "DELETE"), 200)
+chk("quitarlo de nuevo -> 404", B(f"eventos/{RETRO['id_evento']}/personal/{p['id_personal']}", "DELETE"), 404)
+chk("sin historial ya se puede borrar", B(f"personal/{p['id_personal']}", "DELETE"), 200)
+
+print("== Dotación: cuánta gente va a cada noche ==")
+chk("fijar seguridad, limpieza y barman", B(f"eventos/{RETRO['id_evento']}/dotacion", "PUT", {"seguridad": 6, "limpieza": 2, "barman": 4}), 200, lambda d: {x["rol_local"]: x["pedida"] for x in d["dotacion"]} == {"seguridad": 6, "limpieza": 2, "barman": 4})
+chk("cambiar solo uno", B(f"eventos/{RETRO['id_evento']}/dotacion", "PUT", {"barman": 5}), 200, lambda d: {x["rol_local"]: x["pedida"] for x in d["dotacion"]} == {"seguridad": 6, "limpieza": 2, "barman": 5})
+chk("cantidad negativa -> 400", B(f"eventos/{RETRO['id_evento']}/dotacion", "PUT", {"seguridad": -1}), 400)
+chk("cantidad con decimales -> 400", B(f"eventos/{RETRO['id_evento']}/dotacion", "PUT", {"seguridad": 2.5}), 400)
+chk("sin ningún dato -> 400", B(f"eventos/{RETRO['id_evento']}/dotacion", "PUT", {}), 400)
+chk("evento de otro boliche -> 404", B(f"eventos/{ev_dos['id_evento']}/dotacion", "PUT", {"seguridad": 1}), 404)
+
+# ---------------------------------------------------------------------------------------------------------
+print("== Proveedores ==")
+chk("los 2 proveedores de ejemplo con lo gastado", B("proveedores"), 200, lambda d: {x["nombre"]: x["total_gastado"] for x in d} == {"Distribuidora Andina": 180000, "Sonido Pro": 95000})
+pr = chk("el admin carga un proveedor", B("proveedores", "POST", {"nombre": "Hielo del Sur", "rubro": "Hielo", "contacto": "351 820 0001"}), 201, lambda d: d["total_gastado"] == 0)
+chk("el mismo nombre (sin importar mayúsculas) -> 409", B("proveedores", "POST", {"nombre": "HIELO DEL SUR"}), 409)
+chk("otro boliche puede tener el suyo con el mismo nombre", B("proveedores", "POST", {"nombre": "Hielo del Sur"}, TA2, T3), 201)
+chk("sin nombre -> 400", B("proveedores", "POST", {"rubro": "x"}), 400)
+chk("editar", B(f"proveedores/{pr['id_proveedor']}", "PUT", {"contacto": "hielo@sur.com"}), 200, lambda d: d["contacto"] == "hielo@sur.com")
+chk("renombrar chocando con otro -> 409", B(f"proveedores/{pr['id_proveedor']}", "PUT", {"nombre": "sonido pro"}), 409)
+chk("el admin de otro boliche no lo toca -> 404", B(f"proveedores/{pr['id_proveedor']}", "PUT", {"rubro": "x"}, TA2, T3), 404)
+andina = next(x for x in B("proveedores")[1] if x["nombre"] == "Distribuidora Andina")
+chk("con gastos registrados no se borra -> 409", B(f"proveedores/{andina['id_proveedor']}", "DELETE"), 409)
+chk("desactivarlo", B(f"proveedores/{andina['id_proveedor']}", "PUT", {"activo": False}), 200)
+chk("sin gastos se borra", B(f"proveedores/{pr['id_proveedor']}", "DELETE"), 200)
+chk("borrarlo de nuevo -> 404", B(f"proveedores/{pr['id_proveedor']}", "DELETE"), 404)
+
+# ---------------------------------------------------------------------------------------------------------
+print("== Gastos e ingresos ==")
+chk("los gastos de ejemplo suman 675.000", B("gastos"), 200, lambda d: len(d["items"]) == 3 and d["total"] == 180000 + 95000 + 400000)
+chk("los de una noche", B(f"gastos?evento={EV['id_evento']}"), 200, lambda d: d["total"] == 275000)
+chk("los generales (sin evento)", B("gastos?evento=general"), 200, lambda d: len(d["items"]) == 1 and d["items"][0]["concepto"] == "Alquiler del local")
+chk("por proveedor", B(f"gastos?proveedor={andina['id_proveedor']}"), 200, lambda d: d["total"] == 180000)
+chk("filtro de fechas inválido -> 400", B("gastos?desde=ayer"), 400)
+chk("fechas futuras no traen nada", B("gastos?desde=2099-01-01"), 200, lambda d: d["items"] == [])
+g = chk("cargar un gasto de la noche con proveedor", B("gastos", "POST", {"concepto": "Hielo", "categoria": "Insumos", "monto": 30000, "fecha": "2027-01-15", "id_evento": EV["id_evento"], "id_proveedor": andina["id_proveedor"]}), 201, lambda d: d["evento"] == "Noche Electrónica" and d["proveedor"] == "Distribuidora Andina")
+chk("monto cero -> 400", B("gastos", "POST", {"concepto": "X", "monto": 0}), 400)
+chk("monto con decimales -> 400", B("gastos", "POST", {"concepto": "X", "monto": 10.5}), 400)
+chk("sin concepto -> 400", B("gastos", "POST", {"monto": 10}), 400)
+chk("fecha inválida (31 de febrero) -> 400", B("gastos", "POST", {"concepto": "X", "monto": 10, "fecha": "2027-02-31"}), 400)
+chk("evento de OTRO boliche -> 400", B("gastos", "POST", {"concepto": "X", "monto": 10, "id_evento": ev_dos["id_evento"]}), 400, lambda d: "no existe" in d["mensaje"])
+prov_otro = pedir("POST", f"/boliches/{T3}/proveedores", {"nombre": "Ajeno"}, TA2)[1]
+chk("proveedor de OTRO boliche -> 400", B("gastos", "POST", {"concepto": "X", "monto": 10, "id_proveedor": prov_otro["id_proveedor"]}), 400, lambda d: "no existe" in d["mensaje"])
+chk("un gasto general (sin evento)", B("gastos", "POST", {"concepto": "Luz", "monto": 50000, "fecha": "2027-01-20"}), 201, lambda d: d["id_evento"] is None)
+chk("editar el monto", B(f"gastos/{g['id']}", "PUT", {"monto": 32000}), 200, lambda d: d["monto"] == 32000)
+chk("pasar el gasto a general", B(f"gastos/{g['id']}", "PUT", {"id_evento": None}), 200, lambda d: d["id_evento"] is None)
+chk("el admin de otro boliche no lo toca -> 404", B(f"gastos/{g['id']}", "PUT", {"monto": 1}, TA2, T3), 404)
+chk("borrar el gasto", B(f"gastos/{g['id']}", "DELETE"), 200)
+chk("borrarlo de nuevo -> 404", B(f"gastos/{g['id']}", "DELETE"), 404)
+chk("un ingreso (ventas de barra de otra noche)", B("ingresos", "POST", {"concepto": "Guardarropa", "categoria": "Servicios", "monto": 40000, "fecha": "2027-01-15", "id_evento": EV["id_evento"]}), 201)
+chk("los ingresos de ejemplo + el nuevo", B("ingresos"), 200, lambda d: len(d["items"]) == 2 and d["total"] == 390000)
+chk("monto negativo en un ingreso -> 400", B("ingresos", "POST", {"concepto": "X", "monto": -5}), 400)
+
+# ---------------------------------------------------------------------------------------------------------
+print("== Resumen de una noche (nivel 1) ==")
+fev = lambda ev=EV: B(f"eventos/{ev['id_evento']}/finanzas")[1]
+base = fev()
+verdad(f"la noche de ejemplo: ingresos 390.000 (barra 350.000 + guardarropa 40.000), gastos 275.000 + 145.000 al personal", base["ingresos"]["total"] == 390000 and base["gastos"]["total"] == 275000 + 145000 and base["gastos"]["personal"] == 145000 and base["balance"] == 390000 - 420000)
+# ventas: dos entradas en la puerta (admin), una de un RRPP (con comisión del 10 % de 12.000) y una online pagada (10.000; el 6 % no es del local)
+pedir("POST", f"/boliches/{U}/eventos/{EV['id_evento']}/venta-puerta", {"items": [{"id_tipo_entrada": TANDA2, "nombre": "A", "apellido": "B", "dni": "81000001"}, {"id_tipo_entrada": TANDA2, "nombre": "C", "apellido": "D", "dni": "81000002"}], "metodo_pago": "efectivo"}, TA1)
+pedir("POST", f"/boliches/{U}/eventos/{EV['id_evento']}/venta-puerta", {"items": [{"id_tipo_entrada": TANDA2, "nombre": "E", "apellido": "F", "dni": "81000003"}], "metodo_pago": "qr"}, TR)
+web = pedir("POST", f"/publico/boliches/boliche-uno/eventos/{EV['id_evento']}/comprar", {"items": [{"id_tipo_entrada": TANDA2, "nombre": "G", "apellido": "H", "dni": "81000004"}], "contacto_email": "g@h.com"})[1]
+despues_pendiente = fev()
+verdad("una compra online SIN pagar todavía no suma", despues_pendiente["ingresos"]["entradas"] == 3 * 12000)
+pedir("PUT", f"/boliches/{U}/compras/{web['id_compra']}/pagar", None, TA1)
+nuevo = fev()
+verdad("las entradas pagadas suman solas: 3 de puerta a $12.000 + 1 online a $10.000 (sin el 6 % de la plataforma)", nuevo["ingresos"]["entradas"] == 3 * 12000 + 10000)
+verdad("la comisión del RRPP (10 % de 12.000 = 1.200) se descuenta como gasto", nuevo["gastos"]["comisiones_rrpp"] == 1200)
+verdad("el balance cierra: ingresos − gastos", nuevo["balance"] == nuevo["ingresos"]["total"] - nuevo["gastos"]["total"] and nuevo["ingresos"]["total"] == 390000 + 46000 and nuevo["gastos"]["total"] == 420000 + 1200)
+chk("el resumen de una noche de otro boliche -> 404", B(f"eventos/{ev_dos['id_evento']}/finanzas"), 404)
+
+print("== Resumen del boliche (nivel 2) ==")
+fb = chk("el boliche entero: suma las noches y los movimientos generales", B("finanzas"), 200, lambda d: d["boliche"] == "Boliche Uno" and len(d["eventos"]) >= 2)
+verdad("incluye el gasto general del alquiler (400.000) además de lo de las noches", fb["gastos"]["cargados"] == 675000 + 50000 and fb["gastos"]["total"] == 675000 + 50000 + 145000 + 1200)
+verdad("el detalle de la noche coincide con su resumen", next(e for e in fb["eventos"] if e["id_evento"] == EV["id_evento"])["balance"] == nuevo["balance"])
+chk("con período: solo lo de esa fecha", B("finanzas?desde=2027-01-01&hasta=2027-01-31"), 200, lambda d: d["gastos"]["cargados"] == 50000 and d["ingresos"]["cargados"] == 40000 and d["ingresos"]["entradas"] == 0)
+chk("período inválido -> 400", B("finanzas?hasta=ma%C3%B1ana"), 400)
+
+print("== Resumen del admin con todos sus locales (nivel 3) ==")
+pedir("POST", f"/boliches/{D}/gastos", {"concepto": "Cervezas", "monto": 20000}, TA1)
+pedir("POST", f"/boliches/{D}/ingresos", {"concepto": "Barra", "monto": 90000}, TA1)
+gen = lambda tk: pedir("GET", "/finanzas", None, tk)
+chk("el admin ve sus 2 boliches y el total general", gen(TA1), 200, lambda d: [b["nombre"] for b in d["boliches"]] == ["Bar Dos", "Boliche Uno"] and d["balance"] == sum(b["balance"] for b in d["boliches"]) and d["ingresos"]["total"] == fb["ingresos"]["total"] + 90000)
+chk("el otro admin ve solo su boliche", gen(TA2), 200, lambda d: len(d["boliches"]) == 1 and d["boliches"][0]["id_boliche"] == T3)
+chk("el superadmin ve todos", gen(TS), 200, lambda d: len(d["boliches"]) == 3)
+chk("el manager no -> 403", gen(TM), 403)
+chk("el RRPP no -> 403", gen(TR), 403)
+chk("el cliente no -> 403", gen(TC), 403)
+chk("sin sesión -> 401", pedir("GET", "/finanzas"), 401)
+chk("con período", pedir("GET", "/finanzas?desde=2027-01-01&hasta=2027-01-31", None, TA1), 200, lambda d: d["gastos"]["cargados"] == 50000)
+
+fin()

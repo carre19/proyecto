@@ -134,4 +134,47 @@ SELECT l.id_boliche, l.id_evento, l.id_lista, i.nombre, i.apellido, i.dni, i.tel
   ) AS i(nombre, apellido, dni, telefono, edad) ON true
  WHERE l.nombre = 'Amigos de Lucas';
 
+-- ---------- Fase 5: personal, proveedores, gastos e ingresos de ejemplo (Boliche Uno) ----------
+INSERT INTO public.personal (id_boliche, nombre, apellido, rol_local, monto_cobro, cobro_tipo, notas)
+SELECT b.id_boliche, p.nombre, p.apellido, p.rol, p.monto, p.cobro, p.notas
+  FROM public.boliche b JOIN (VALUES
+    ('Gabriel', 'Fuentes', 'seguridad', 25000, 'por_evento', 'Jefe de seguridad, trabaja con su equipo.'),
+    ('Valeria', 'Montes', 'barman', 18000, 'por_evento', NULL),
+    ('Nicolás', 'Paz', 'dj_artista', 120000, 'por_evento', 'DJ residente de los sábados.'),
+    ('Elena', 'Cruz', 'limpieza', 15000, 'por_evento', NULL)
+  ) AS p(nombre, apellido, rol, monto, cobro, notas) ON true WHERE b.subdominio = 'boliche-uno';
+
+INSERT INTO public.personal_contacto (id_boliche, id_personal, tipo, valor)
+SELECT p.id_boliche, p.id_personal, c.tipo, c.valor FROM public.personal p JOIN (VALUES
+    ('Gabriel', 'whatsapp', '351 800 0001'), ('Nicolás', 'instagram', '@nico.dj'), ('Nicolás', 'email', 'nico@dj.com'), ('Valeria', 'telefono', '351 800 0002')
+  ) AS c(nombre, tipo, valor) ON c.nombre = p.nombre;
+
+INSERT INTO public.personal_evento (id_boliche, id_evento, id_personal, monto_pagado)
+SELECT e.id_boliche, e.id_evento, p.id_personal, p.monto_cobro
+  FROM public.evento e JOIN public.boliche b ON b.id_boliche = e.id_boliche AND b.subdominio = 'boliche-uno'
+  JOIN public.personal p ON p.id_boliche = e.id_boliche AND p.nombre IN ('Gabriel', 'Nicolás') WHERE e.nombre = 'Noche Electrónica';
+
+INSERT INTO public.evento_dotacion (id_boliche, id_evento, rol_local, cantidad)
+SELECT e.id_boliche, e.id_evento, d.rol, d.cantidad FROM public.evento e JOIN public.boliche b ON b.id_boliche = e.id_boliche AND b.subdominio = 'boliche-uno'
+  JOIN (VALUES ('seguridad', 4), ('limpieza', 2), ('barman', 3)) AS d(rol, cantidad) ON true WHERE e.nombre = 'Noche Electrónica';
+
+INSERT INTO public.proveedor (id_boliche, nombre, rubro, contacto)
+SELECT b.id_boliche, p.nombre, p.rubro, p.contacto FROM public.boliche b JOIN (VALUES
+    ('Distribuidora Andina', 'Bebidas', 'ventas@andina.com'), ('Sonido Pro', 'Sonido e iluminación', '351 810 0001')
+  ) AS p(nombre, rubro, contacto) ON true WHERE b.subdominio = 'boliche-uno';
+
+INSERT INTO public.gasto (id_boliche, id_evento, id_proveedor, concepto, categoria, monto, fecha)
+SELECT b.id_boliche, e.id_evento, pr.id_proveedor, g.concepto, g.categoria, g.monto, CURRENT_DATE
+  FROM public.boliche b JOIN (VALUES
+    ('Noche Electrónica', 'Distribuidora Andina', 'Reposición de bebidas', 'Insumos', 180000),
+    ('Noche Electrónica', 'Sonido Pro', 'Alquiler de sonido', 'Servicios', 95000),
+    (NULL, NULL, 'Alquiler del local', 'Fijos', 400000)
+  ) AS g(evento, proveedor, concepto, categoria, monto) ON true
+  LEFT JOIN public.evento e ON e.id_boliche = b.id_boliche AND e.nombre = g.evento
+  LEFT JOIN public.proveedor pr ON pr.id_boliche = b.id_boliche AND pr.nombre = g.proveedor WHERE b.subdominio = 'boliche-uno';
+
+INSERT INTO public.ingreso (id_boliche, id_evento, concepto, categoria, monto, fecha)
+SELECT e.id_boliche, e.id_evento, 'Ventas de barra', 'Barra', 350000, CURRENT_DATE
+  FROM public.evento e JOIN public.boliche b ON b.id_boliche = e.id_boliche AND b.subdominio = 'boliche-uno' WHERE e.nombre = 'Noche Electrónica';
+
 COMMIT;
