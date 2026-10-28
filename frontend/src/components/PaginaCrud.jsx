@@ -1,6 +1,6 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from "@ant-design/icons";
 import { Alert, App, Button, Empty, Popconfirm, Space, Table, Tooltip } from "antd";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useRecurso from "../hooks/useRecurso.js";
 import { mensajeError } from "../services/api.js";
 import { fechaLarga } from "../utils/formato.js";
@@ -24,6 +24,7 @@ import Topbar from "./Topbar.jsx";
 //   camposEdicion -> campos del formulario al EDITAR, si son otros que al crear (ej. el equipo: al crear se piden los datos de la persona, al editar solo la comisión)
 //   sinEliminar   -> true si el recurso no se borra (se desactiva)
 //   pie           -> contenido extra que va debajo de la tabla (por ejemplo, los paneles que llegan en otras fases)
+//   alCargar      -> (items) => void, se llama cada vez que se carga o recarga la lista (por ejemplo, para sumar los cupos de las entradas)
 //   embebida      -> true para usarla dentro de otra pantalla (una pestaña): sin buscador ni título, solo la tabla y el botón de crear
 // Ejemplo completo en pages/Clientes.jsx. Estados internos:
 //   busqueda -> texto del buscador | editando -> null, "nuevo" o el item que se edita
@@ -37,6 +38,11 @@ export default function PaginaCrud({ config }) {
   const { items, cargando, error, recargar, guardar, eliminar } = useRecurso(api, id);
   const [busqueda, setBusqueda] = useState("");
   const [editando, setEditando] = useState(null);
+
+  useEffect(() => {
+    config.alCargar?.(items);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando cambia la lista, no cada vez que se arma la config
+  }, [items]);
 
   // Filas que pasan el filtro del buscador.
   const visibles = useMemo(() => {

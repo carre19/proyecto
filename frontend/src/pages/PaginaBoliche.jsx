@@ -71,7 +71,7 @@ export default function PaginaBoliche() {
         {boliche.fotos.length > 0 && (
           <Image.PreviewGroup>
             <div className="pub-fotos">
-              {boliche.fotos.map((f) => <Image key={f} src={f} alt={boliche.nombre} />)}
+              {boliche.fotos.map((f) => <Image key={f.id_foto} src={f.url} alt={boliche.nombre} />)}
             </div>
           </Image.PreviewGroup>
         )}

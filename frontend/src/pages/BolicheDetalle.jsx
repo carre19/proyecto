@@ -249,16 +249,16 @@ function PestanaDatos({ boliche, recargar }) {
         ) : (
           <Image.PreviewGroup>
             <div className="galeria-fotos">
-              {boliche.fotos.map((url) => (
-                <div key={url} className="galeria-foto">
-                  <Image src={url} alt={boliche.nombre} />
+              {boliche.fotos.map((foto) => (
+                <div key={foto.id_foto} className="galeria-foto">
+                  <Image src={foto.url} alt={boliche.nombre} />
                   {permisos.puedeEditarLocal && (
                     <Popconfirm
                       title="¿Borrar esta foto?"
                       okText="Borrar"
                       cancelText="Cancelar"
                       okButtonProps={{ danger: true }}
-                      onConfirm={() => accion(imagenesApi.borrarFoto(boliche.id_boliche, url), "Foto borrada")}
+                      onConfirm={() => accion(imagenesApi.borrarFoto(boliche.id_boliche, foto.id_foto), "Foto borrada")}
                     >
                       <Button className="galeria-borrar" shape="circle" danger icon={<DeleteOutlined />} aria-label="Borrar foto" />
                     </Popconfirm>
@@ -268,7 +268,7 @@ function PestanaDatos({ boliche, recargar }) {
             </div>
           </Image.PreviewGroup>
         )}
-        <p className="muted" style={{ marginTop: 12 }}>JPG, PNG o WebP, hasta 5 MB cada una y hasta 12 fotos.</p>
+        <p className="muted" style={{ marginTop: 12 }}>JPG, PNG o WebP, hasta 5 MB cada una y hasta 10 fotos (la primera es la portada).</p>
       </Card>
 
       {permisos.esSuperadmin && (

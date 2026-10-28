@@ -7,7 +7,7 @@ import { soloFecha } from "../utils/formato.js";
 // Se arma solo a partir de la lista "campos":
 //   name -> clave del dato | label -> texto visible
 //   type -> text (por defecto), number, date, datetime (fecha y hora), email, password, textarea, select o multiselect (lista de valores)
-//   required, full (ocupa todo el ancho), step (solo number), options [{ value, label }] (solo select)
+//   required, full (ocupa todo el ancho), step / min / max (solo number; el mínimo es 0 salvo que se indique), options [{ value, label }] (solo select)
 //   defecto -> valor inicial al crear
 //   desde   -> (item) => valor inicial al editar, cuando el dato del registro no tiene la forma del campo
 //   ayuda   -> texto de ayuda debajo del campo
@@ -61,7 +61,7 @@ function Control({ campo, ...props }) {
     case "multiselect":
       return <Select mode="multiple" options={campo.options} allowClear optionFilterProp="label" placeholder={campo.placeholder ?? "Elegí una o más"} {...props} />;
     case "number":
-      return <InputNumber min={0} step={campo.step ?? 1} style={{ width: "100%" }} {...props} />;
+      return <InputNumber min={campo.min ?? 0} max={campo.max} step={campo.step ?? 1} style={{ width: "100%" }} {...props} />;
     case "date":
       return <DatePicker format="DD/MM/YYYY" placeholder="dd/mm/aaaa" style={{ width: "100%" }} {...props} />;
     case "datetime":

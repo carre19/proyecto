@@ -14,7 +14,7 @@ export const bolichesApi = {
 // Usuarios de todo el sistema (solo el superadmin).
 export const usuariosApi = crearApi("/usuarios");
 
-// Recursos que cuelgan de un boliche: "eventos" o "equipo". Tiene la misma forma que crearApi, así sirve con PaginaCrud.
+// Recursos que cuelgan de un boliche: "eventos", "equipo", "bebidas", "mesas-vip" o "eventos/:id/entradas". Tiene la misma forma que crearApi, así sirve con PaginaCrud.
 export const apiDeBoliche = (idBoliche, recurso) => {
   const base = `/boliches/${idBoliche}/${recurso}`;
   return {
@@ -38,7 +38,29 @@ const subirArchivo = (url, archivo) =>
 
 export const imagenesApi = {
   subirFoto: (idBoliche, archivo) => subirArchivo(`/boliches/${idBoliche}/fotos`, archivo),
-  borrarFoto: (idBoliche, url) => api.delete(`/boliches/${idBoliche}/fotos`, { params: { url } }).then((res) => res.data),
+  borrarFoto: (idBoliche, idFoto) => api.delete(`/boliches/${idBoliche}/fotos/${idFoto}`).then((res) => res.data),
   subirImagenEvento: (idBoliche, idEvento, archivo) => subirArchivo(`/boliches/${idBoliche}/eventos/${idEvento}/imagen`, archivo),
   borrarImagenEvento: (idBoliche, idEvento) => api.delete(`/boliches/${idBoliche}/eventos/${idEvento}/imagen`).then((res) => res.data),
+  subirImagenBebida: (idBoliche, idBebida, archivo) => subirArchivo(`/boliches/${idBoliche}/bebidas/${idBebida}/imagen`, archivo),
+  borrarImagenBebida: (idBoliche, idBebida) => api.delete(`/boliches/${idBoliche}/bebidas/${idBebida}/imagen`).then((res) => res.data),
+  subirImagenMesa: (idBoliche, idMesa, archivo) => subirArchivo(`/boliches/${idBoliche}/mesas-vip/${idMesa}/imagen`, archivo),
+  borrarImagenMesa: (idBoliche, idMesa) => api.delete(`/boliches/${idBoliche}/mesas-vip/${idMesa}/imagen`).then((res) => res.data),
+};
+
+// Fotos del boliche: una es la portada y el resto, la galería. Todas devuelven la lista completa y actualizada.
+export const fotosApi = {
+  marcarPortada: (idBoliche, idFoto) => api.put(`/boliches/${idBoliche}/fotos/${idFoto}`, { es_portada: true }).then((res) => res.data),
+};
+
+// Colores de la página del boliche. Todas devuelven { claro, oscuro, personalizado, defecto }.
+export const temaApi = {
+  ver: (idBoliche) => api.get(`/boliches/${idBoliche}/tema`).then((res) => res.data),
+  guardar: (idBoliche, modo, colores) => api.put(`/boliches/${idBoliche}/tema`, { modo, ...colores }).then((res) => res.data),
+  restablecer: (idBoliche, modo) => api.delete(`/boliches/${idBoliche}/tema`, { params: { modo } }).then((res) => res.data),
+};
+
+// Eventos y mesas VIP: qué mesas ofrece cada evento (la lista trae todas las del boliche, indicando cuáles ofrece).
+export const mesasDeEventoApi = {
+  listar: (idBoliche, idEvento) => api.get(`/boliches/${idBoliche}/eventos/${idEvento}/mesas-vip`).then((res) => res.data),
+  ofrecer: (idBoliche, idEvento, idMesa, datos) => api.put(`/boliches/${idBoliche}/eventos/${idEvento}/mesas-vip/${idMesa}`, datos).then((res) => res.data),
 };

@@ -52,7 +52,7 @@ export default function Explorar() {
               variant="borderless"
               hoverable
               onClick={() => navigate(`/b/${b.subdominio}`)}
-              cover={b.fotos?.length ? <img className="boliche-portada" src={b.fotos[0]} alt={b.nombre} /> : undefined}
+              cover={b.portada ? <img className="boliche-portada" src={b.portada} alt={b.nombre} /> : undefined}
             >
               <h3>{b.nombre}</h3>
               {b.direccion && <p className="muted"><EnvironmentOutlined /> {b.direccion}</p>}
