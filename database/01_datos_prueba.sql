@@ -51,4 +51,59 @@ SELECT b.id_boliche, e.nombre, now() + e.dias * interval '1 day' + interval '23 
     ('club-tres',   'Latin Night',        5, ARRAY['DJ Sol'],               18, 'Casual',         true,  8,    'Reggaeton, cumbia y salsa.',          'admin2@demo.com')
   ) AS e(sub, nombre, dias, artistas, edad, dress, vip, mesas, descripcion, creador) ON e.sub = b.subdominio;
 
+-- ---------- Fase 1B: entradas, bebidas y mesas VIP de ejemplo (Boliche Uno) ----------
+
+-- Entradas de "Noche Electrónica" (capacidad del boliche: 800; los cupos suman 700).
+INSERT INTO public.tipo_entrada (id_boliche, id_evento, nombre, tipo, precio_virtual, precio_puerta, cupo, estado, orden)
+SELECT e.id_boliche, e.id_evento, t.nombre, t.tipo, t.virtual, t.puerta, t.cupo, t.estado, t.orden
+  FROM public.evento e
+  JOIN public.boliche b ON b.id_boliche = e.id_boliche AND b.subdominio = 'boliche-uno'
+  JOIN (VALUES
+    ('Tanda 1', 'tanda', 8000, 10000, 250, 'agotada', 1),
+    ('Tanda 2', 'tanda', 10000, 12000, 250, 'disponible', 2),
+    ('Tanda 3', 'tanda', 12000, 15000, 100, 'no_disponible', 3),
+    ('VIP', 'vip', 25000, 30000, 100, 'disponible', 4)
+  ) AS t(nombre, tipo, virtual, puerta, cupo, estado, orden) ON true
+ WHERE e.nombre = 'Noche Electrónica';
+
+INSERT INTO public.tipo_entrada (id_boliche, id_evento, nombre, tipo, precio_virtual, precio_puerta, cupo, orden)
+SELECT e.id_boliche, e.id_evento, 'General', 'tanda', 6000, 8000, 500, 1
+  FROM public.evento e JOIN public.boliche b ON b.id_boliche = e.id_boliche AND b.subdominio = 'boliche-uno'
+ WHERE e.nombre = 'Fiesta Retro';
+
+-- Carta de bebidas de Boliche Uno.
+INSERT INTO public.bebida (id_boliche, categoria, nombre, descripcion, precio, disponible)
+SELECT b.id_boliche, x.categoria, x.nombre, x.descripcion, x.precio, x.disponible
+  FROM public.boliche b
+  JOIN (VALUES
+    ('Tragos', 'Fernet con coca', 'Fernet Branca con Coca-Cola', 5000, true),
+    ('Tragos', 'Gin tonic', 'Gin, tónica y pepino', 6500, true),
+    ('Tragos', 'Aperol spritz', 'Aperol, espumante y soda', 7000, false),
+    ('Cervezas', 'Cerveza rubia (1 litro)', 'Lager de barril', 4500, true),
+    ('Cervezas', 'Cerveza IPA (500 ml)', 'Artesanal', 5500, true),
+    ('Botellas', 'Botella de vodka', 'Con mixers y hielo', 60000, true),
+    ('Botellas', 'Botella de whisky', 'Con mixers y hielo', 95000, true)
+  ) AS x(categoria, nombre, descripcion, precio, disponible) ON true
+ WHERE b.subdominio = 'boliche-uno';
+
+INSERT INTO public.bebida (id_boliche, categoria, nombre, descripcion, precio)
+SELECT b.id_boliche, 'Tragos', 'Margarita', 'Tequila, limón y sal', 6000 FROM public.boliche b WHERE b.subdominio = 'bar-dos';
+
+-- Mesas VIP de Boliche Uno; "Noche Electrónica" ofrece dos, una ya reservada.
+INSERT INTO public.mesa_vip (id_boliche, nombre, capacidad, precio, descripcion)
+SELECT b.id_boliche, m.nombre, m.capacidad, m.precio, m.descripcion
+  FROM public.boliche b
+  JOIN (VALUES
+    ('Mesa 1', 6, 120000, 'Una botella a elección, mixers y servicio de mozo.'),
+    ('Mesa 2', 8, 160000, 'Dos botellas a elección, mixers y servicio de mozo.'),
+    ('Mesa Palco', 12, 250000, 'Palco sobre la pista con tres botellas y mozo exclusivo.')
+  ) AS m(nombre, capacidad, precio, descripcion) ON true
+ WHERE b.subdominio = 'boliche-uno';
+
+INSERT INTO public.evento_mesa_vip (id_boliche, id_evento, id_mesa, estado)
+SELECT e.id_boliche, e.id_evento, m.id_mesa, CASE WHEN m.nombre = 'Mesa 1' THEN 'reservada' ELSE 'disponible' END
+  FROM public.evento e
+  JOIN public.mesa_vip m ON m.id_boliche = e.id_boliche AND m.nombre IN ('Mesa 1', 'Mesa 2')
+ WHERE e.nombre = 'Noche Electrónica';
+
 COMMIT;
