@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { ADMIN, MANAGER, RRPP, SUPERADMIN, accesoBoliche, soloRoles, verificarToken } from "../middleware/auth.js";
-import { agregarAdmin, borrarFoto, crearBoliche, editarBoliche, listarBoliches, quitarAdmin, subirFoto, verBoliche } from "../controllers/boliche.controller.js";
+import { agregarAdmin, crearBoliche, editarBoliche, listarBoliches, quitarAdmin, verBoliche } from "../controllers/boliche.controller.js";
+import { borrarFoto, editarFoto, listarFotos, subirFoto } from "../controllers/foto.controller.js";
+import { crearEntrada, editarEntrada, eliminarEntrada, listarEntradas } from "../controllers/entrada.controller.js";
+import { borrarImagenBebida, crearBebida, editarBebida, eliminarBebida, listarBebidas, subirImagenBebida } from "../controllers/bebida.controller.js";
+import { borrarImagenMesa, crearMesa, editarMesa, eliminarMesa, listarMesas, listarMesasDelEvento, ofrecerMesa, subirImagenMesa } from "../controllers/mesa.controller.js";
+import { guardarTema, restablecerTema, verTema } from "../controllers/tema.controller.js";
 import { recibirImagen } from "../middleware/imagen.js";
 import { crearMiembro, darDeBaja, editarMiembro, listarEquipo } from "../controllers/equipo.controller.js";
 import { borrarImagenEvento, crearEvento, editarEvento, eliminarEvento, listarEventos, subirImagenEvento, verEvento } from "../controllers/evento.controller.js";
@@ -20,8 +25,35 @@ delBoliche.get("/", verBoliche);
 delBoliche.put("/", soloRoles(SUPERADMIN, ADMIN), editarBoliche);
 
 // Fotos del local: las suben y las borran el superadmin y el admin del boliche (el cuerpo es la imagen).
-delBoliche.post("/fotos", soloRoles(SUPERADMIN, ADMIN), recibirImagen, subirFoto);
-delBoliche.delete("/fotos", soloRoles(SUPERADMIN, ADMIN), borrarFoto);
+// Todo lo de la ficha del boliche (fotos, entradas, bebidas, mesas VIP y colores) lo ven todos los del boliche
+// y lo editan solo el superadmin y el admin.
+const edita = soloRoles(SUPERADMIN, ADMIN);
+
+delBoliche.get("/fotos", listarFotos);
+delBoliche.post("/fotos", edita, recibirImagen, subirFoto);
+delBoliche.put("/fotos/:idFoto", edita, editarFoto);
+delBoliche.delete("/fotos/:idFoto", edita, borrarFoto);
+
+// Bebidas: la carta del boliche. Cada una que se carga queda guardada.
+delBoliche.get("/bebidas", listarBebidas);
+delBoliche.post("/bebidas", edita, crearBebida);
+delBoliche.put("/bebidas/:idBebida", edita, editarBebida);
+delBoliche.delete("/bebidas/:idBebida", edita, eliminarBebida);
+delBoliche.post("/bebidas/:idBebida/imagen", edita, recibirImagen, subirImagenBebida);
+delBoliche.delete("/bebidas/:idBebida/imagen", edita, borrarImagenBebida);
+
+// Mesas VIP del boliche.
+delBoliche.get("/mesas-vip", listarMesas);
+delBoliche.post("/mesas-vip", edita, crearMesa);
+delBoliche.put("/mesas-vip/:idMesa", edita, editarMesa);
+delBoliche.delete("/mesas-vip/:idMesa", edita, eliminarMesa);
+delBoliche.post("/mesas-vip/:idMesa/imagen", edita, recibirImagen, subirImagenMesa);
+delBoliche.delete("/mesas-vip/:idMesa/imagen", edita, borrarImagenMesa);
+
+// Colores de la página del boliche (modo claro y oscuro).
+delBoliche.get("/tema", verTema);
+delBoliche.put("/tema", edita, guardarTema);
+delBoliche.delete("/tema", edita, restablecerTema);
 
 // Los admins de un boliche los maneja el superadmin.
 delBoliche.post("/admins", soloRoles(SUPERADMIN), agregarAdmin);
@@ -39,6 +71,14 @@ delBoliche.post("/eventos", soloRoles(SUPERADMIN, ADMIN, MANAGER), crearEvento);
 delBoliche.get("/eventos/:idEvento", verEvento);
 delBoliche.put("/eventos/:idEvento", soloRoles(SUPERADMIN, ADMIN, MANAGER), editarEvento);
 delBoliche.delete("/eventos/:idEvento", soloRoles(SUPERADMIN, ADMIN), eliminarEvento);
+
+// Entradas de cada evento (tandas y VIP) y mesas VIP que ofrece cada evento.
+delBoliche.get("/eventos/:idEvento/entradas", listarEntradas);
+delBoliche.post("/eventos/:idEvento/entradas", edita, crearEntrada);
+delBoliche.put("/eventos/:idEvento/entradas/:idEntrada", edita, editarEntrada);
+delBoliche.delete("/eventos/:idEvento/entradas/:idEntrada", edita, eliminarEntrada);
+delBoliche.get("/eventos/:idEvento/mesas-vip", listarMesasDelEvento);
+delBoliche.put("/eventos/:idEvento/mesas-vip/:idMesa", edita, ofrecerMesa);
 
 // Flyer del evento: lo cambia quien puede editar el evento (el manager, solo los suyos).
 delBoliche.post("/eventos/:idEvento/imagen", soloRoles(SUPERADMIN, ADMIN, MANAGER), recibirImagen, subirImagenEvento);

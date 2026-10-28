@@ -2,19 +2,20 @@ import pool from "../data/db.js";
 import { listaDeIds, numeroOpcional, parseId, textoObligatorio, textoOpcional, validarPersona } from "../utils/validaciones.js";
 import { insertarUsuario, responderErrorDeBase } from "../utils/usuarios.js";
 import { ADMIN, esSuperadmin } from "../middleware/auth.js";
-import { borrarImagen, guardarImagen, URL_UPLOADS } from "../utils/imagenes.js";
 
-// Boliche con sus admins y la cantidad de gente del equipo.
+// Boliche con sus admins, sus fotos (la portada primero) y la cantidad de gente del equipo.
 const SELECT_BOLICHE = `
   SELECT b.*,
          COALESCE((SELECT json_agg(json_build_object('id_usuario', u.id_usuario, 'nombre_completo', u.nombre_completo, 'email', u.email) ORDER BY u.nombre)
                    FROM boliche_admin a JOIN usuario u ON u.id_usuario = a.id_usuario WHERE a.id_boliche = b.id_boliche), '[]') AS admins,
+         COALESCE((SELECT json_agg(json_build_object('id_foto', f.id_foto, 'url', f.url, 'es_portada', f.es_portada, 'orden', f.orden) ORDER BY f.es_portada DESC, f.orden, f.id_foto)
+                   FROM boliche_foto f WHERE f.id_boliche = b.id_boliche), '[]') AS fotos,
          (SELECT count(*)::int FROM boliche_equipo q WHERE q.id_boliche = b.id_boliche) AS equipo,
          (SELECT count(*)::int FROM evento e WHERE e.id_boliche = b.id_boliche AND e.estado = 'publicado' AND e.fecha_hora >= now()) AS proximos_eventos
   FROM boliche b`;
 
 // Campos que puede cambiar cada rol. Los de la plataforma (subdominio, cobro, activo) son solo del superadmin.
-// Las fotos no se editan acá: se suben y se borran por /fotos (así nadie engancha la imagen de otro local).
+// Las fotos no se editan acá: se suben, se ordenan y se borran por /fotos (así nadie engancha la imagen de otro local).
 const CAMPOS_DEL_ADMIN = ["nombre", "descripcion", "direccion", "latitud", "longitud", "capacidad", "instagram", "whatsapp"];
 const CAMPOS_DEL_SUPERADMIN = [...CAMPOS_DEL_ADMIN, "subdominio", "tipo_cobro", "monto_mensual", "activo"];
 const REGEX_SUBDOMINIO = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
@@ -208,48 +209,5 @@ export const quitarAdmin = async (req, res) => {
     res.status(500).json({ mensaje: "No se pudo quitar el admin" });
   } finally {
     cliente.release();
-  }
-};
-
-// ---------- Fotos del boliche ----------
-const MAXIMO_FOTOS = 12;
-
-// Sube una foto (cuerpo = la imagen). La ruta queda en boliche.fotos. La suben el superadmin y el admin del boliche.
-export const subirFoto = async (req, res) => {
-  try {
-    if (req.boliche.fotos.length >= MAXIMO_FOTOS) {
-      return res.status(400).json({ mensaje: `un boliche puede tener hasta ${MAXIMO_FOTOS} fotos: borrá alguna para subir otra` });
-    }
-    const url = await guardarImagen(`boliches/${req.boliche.id_boliche}`, req.imagen.buffer, req.imagen.extension);
-    try {
-      await pool.query(`UPDATE boliche SET fotos = array_append(fotos, $1) WHERE id_boliche = $2`, [url, req.boliche.id_boliche]);
-    } catch (error) {
-      await borrarImagen(url); // si no se pudo anotar en la base, no queda un archivo huérfano
-      throw error;
-    }
-
-    const boliche = await pool.query(`${SELECT_BOLICHE} WHERE b.id_boliche = $1`, [req.boliche.id_boliche]);
-    res.status(201).json(boliche.rows[0]);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensaje: "No se pudo subir la foto" });
-  }
-};
-
-// Borra una foto: ?url=/api/uploads/boliches/<id>/<archivo>. Solo se borran las del propio boliche.
-export const borrarFoto = async (req, res) => {
-  try {
-    const url = String(req.query.url ?? "");
-    if (!req.boliche.fotos.includes(url) || !url.startsWith(`${URL_UPLOADS}/boliches/${req.boliche.id_boliche}/`)) {
-      return res.status(404).json({ mensaje: "esa foto no está en este boliche" });
-    }
-    await pool.query(`UPDATE boliche SET fotos = array_remove(fotos, $1) WHERE id_boliche = $2`, [url, req.boliche.id_boliche]);
-    await borrarImagen(url);
-
-    const boliche = await pool.query(`${SELECT_BOLICHE} WHERE b.id_boliche = $1`, [req.boliche.id_boliche]);
-    res.json(boliche.rows[0]);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensaje: "No se pudo borrar la foto" });
   }
 };

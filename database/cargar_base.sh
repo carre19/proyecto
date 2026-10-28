@@ -24,7 +24,7 @@ if [ -z "$("${PSQL[@]}" -d postgres -Atc "SELECT 1 FROM pg_database WHERE datnam
   "${PSQL[@]}" -d postgres -c "CREATE DATABASE \"$DB_NAME\""
 fi
 
-if [ -n "$("${PSQL[@]}" -d "$DB_NAME" -Atc "SELECT to_regclass('public.empresas')")" ]; then
+if [ -n "$("${PSQL[@]}" -d "$DB_NAME" -Atc "SELECT to_regclass('public.boliche')")" ]; then
   echo ">> La base $DB_NAME ya tiene tablas: no se carga nada (usá --reset para empezar de cero)."
   exit 0
 fi
