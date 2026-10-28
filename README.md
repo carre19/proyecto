@@ -364,7 +364,6 @@ Se actualiza con cada cambio importante. Última actualización: fase 1B termina
 - [ ] Probar las altas desde los formularios del panel (hoy están probadas en la API con 167 checks y la pantalla se vio en el navegador) y la subida de fotos desde la pantalla.
 - [ ] Revisar el panel y la página pública en celular (los estilos ya tienen reglas para pantallas chicas, falta verlos).
 - [ ] Confirmar con el equipo la tipografía de la sección (hoy la misma de la app) y si el negro y dorado alcanza solo a la página pública (como está hoy) o también al panel.
-- [ ] Al entrar a Entradas o Mesas VIP, el evento elegido por defecto es el primero de la lista (el de fecha más lejana); conviene elegir el próximo.
 
 ## 6.2 Lo que falta de la fase 1
 

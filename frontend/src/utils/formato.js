@@ -59,6 +59,13 @@ export const fechaHora = (valor) => {
   return `${dia} ${d.getDate()} ${mes}${anio} · ${hora}`;
 };
 
+// El evento que se elige por defecto en una lista: el próximo que todavía no pasó (si no hay, el primero).
+export const eventoPorDefecto = (eventos) => {
+  const ahora = Date.now();
+  const proximos = eventos.filter((e) => new Date(e.fecha_hora).getTime() >= ahora).sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora));
+  return (proximos[0] ?? eventos[0])?.id_evento ?? null;
+};
+
 // Los 5 roles de la plataforma, como se muestran.
 export const ROLES = {
   superadmin: "Superadmin",

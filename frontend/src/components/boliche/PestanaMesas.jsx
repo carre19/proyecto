@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiDeBoliche, imagenesApi, mesasDeEventoApi } from "../../api/plataforma.js";
 import usePermisos from "../../hooks/usePermisos.js";
 import { mensajeError } from "../../services/api.js";
-import { fechaHora, moneda } from "../../utils/formato.js";
+import { eventoPorDefecto, fechaHora, moneda } from "../../utils/formato.js";
 import AccionesImagen from "../AccionesImagen.jsx";
 import Estado from "../Estado.jsx";
 import PaginaCrud from "../PaginaCrud.jsx";
@@ -22,7 +22,7 @@ function MesasPorEvento({ idBoliche }) {
 
   useEffect(() => {
     apiDeBoliche(idBoliche, "eventos").obtenerTodos()
-      .then((lista) => { setEventos(lista); setIdEvento(lista[0]?.id_evento ?? null); })
+      .then((lista) => { setEventos(lista); setIdEvento(eventoPorDefecto(lista)); })
       .catch(() => setEventos([]));
   }, [idBoliche]);
 

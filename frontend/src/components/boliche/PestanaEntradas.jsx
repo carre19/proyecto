@@ -2,7 +2,7 @@ import { Alert, Empty, Progress, Select, Space, Tag } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { apiDeBoliche } from "../../api/plataforma.js";
 import usePermisos from "../../hooks/usePermisos.js";
-import { fechaHora, moneda } from "../../utils/formato.js";
+import { eventoPorDefecto, fechaHora, moneda } from "../../utils/formato.js";
 import Estado from "../Estado.jsx";
 import PaginaCrud from "../PaginaCrud.jsx";
 
@@ -22,7 +22,7 @@ export default function PestanaEntradas({ boliche }) {
 
   useEffect(() => {
     apiDeBoliche(boliche.id_boliche, "eventos").obtenerTodos()
-      .then((lista) => { setEventos(lista); setIdEvento(lista[0]?.id_evento ?? null); })
+      .then((lista) => { setEventos(lista); setIdEvento(eventoPorDefecto(lista)); })
       .catch(() => setEventos([]));
   }, [boliche.id_boliche]);
 
