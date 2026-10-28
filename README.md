@@ -2,7 +2,8 @@
 
 Fuente de esta documentación: la página de Notion **"Proyecto nuestro"** (6 de octubre de 2026, @Gianluca). Todo lo que figura en la sección 1 es lo que dice esa página; lo que decidimos nosotros al implementarlo está en la sección 2 y lo que sigue sin definir, en la sección 4.
 
-- **Estado actual:** **fase 1 terminada** (base de datos, API y front de los 5 roles); la fase 2 (entradas y QR) es la siguiente. El front **conserva su estilo actual**.
+- **Estado actual:** **fase 1 terminada** (base de datos, API y front de los 5 roles). **Fase 1B (boliches funcionales): base de datos y API terminadas y probadas; el front está a medio hacer** (ver 6.1B). La fase 2 (entradas con compra y QR) es la siguiente. El front **conserva su estilo actual**.
+- **Rama:** todo el trabajo está en `main` (no hay otras ramas).
 - **Base de datos:** PostgreSQL local administrada con pgAdmin 4 (ver "Puesta en marcha").
 - **Tecnología:** React + Vite en el front; Node.js + Express + PostgreSQL en el back; un VPS para correr todo.
 
@@ -231,6 +232,17 @@ Estas decisiones no están en la página de Notion: las tomamos para poder avanz
 | Diseño | **Se conserva el estilo actual del front.** El front se adapta a la plataforma (paneles, pantallas y menús por rol) reutilizando sus componentes y su estilo; Space Grotesk + glassmorphism (Notion) queda pendiente | Indicación del equipo: dejar el estilo igual |
 | Convivencia con lo anterior | El sistema anterior (gestor de una organizadora) **se reemplaza** en esta rama: base, API y pantallas son las de la plataforma. La rama `main` conserva el sistema anterior completo | Indicación del equipo: cambiar todo salvo el estilo; y poder volver atrás |
 
+## 2.1 Decisiones de la fase 1B
+
+- **Bebidas:** la tabla se llama `bebida` (el equipo pidió "una tabla bebidas"; en el documento figuraba como `producto`). Cada bebida tiene categoría, nombre, descripción, precio, imagen y un interruptor "disponible" para sacarla de la carta sin borrarla. No se repite el mismo nombre en la misma categoría de un boliche (sin importar mayúsculas), pero otro boliche sí puede tener la suya.
+- **Fotos del boliche:** tabla `boliche_foto`, hasta **10** por boliche y **una sola portada** (la primera que se sube; se puede cambiar). Reemplaza al arreglo `boliche.fotos`.
+- **Entradas:** la suma de los cupos de un evento **no puede superar la capacidad del boliche**; sin capacidad cargada no se pueden crear entradas, y no se puede bajar la capacidad por debajo de lo ya repartido. Lo garantiza la base con triggers. La página pública muestra precios y estado, nunca el cupo.
+- **Mesas VIP:** catálogo por boliche (`mesa_vip`) y, por evento, cuáles se ofrecen y si están `disponible` o `reservada` (`evento_mesa_vip`). La reserva por el cliente llega en la fase 2.
+- **Colores del boliche:** 4 por modo (fondo, tarjetas, texto, acento) en `#RRGGBB`, por defecto negro y dorado. El back exige legibilidad: texto/fondo y texto/tarjetas con contraste ≥ 4,5:1 y acento/fondo ≥ 3:1. Solo se cambian colores: la tipografía y la estructura no.
+- **Permisos:** superadmin y admin editan todo lo del boliche; manager y RRPP solo lo ven (por la API); el cliente ve la página pública.
+- **Precios** en pesos enteros (sin centavos). **Tipografía** de la sección del boliche: por ahora la misma de la app (Cinzel + Philosopher), pendiente de confirmar.
+- **Robustez:** el pool de conexiones ya no tira el servidor si Postgres corta una conexión inactiva (antes la API se caía).
+
 ---
 
 # 3. Plan de trabajo
@@ -239,6 +251,7 @@ Estas decisiones no están en la página de Notion: las tomamos para poder avanz
 |---|---|---|
 | **0** | Documentación en este README, copia del proyecto con PostgreSQL local | ✅ Hecha |
 | **1** | Esquema multi-boliche; los 5 roles con su login; **panel del superadmin** (boliches y sus admins, usuarios); **panel del admin** (sus boliches, equipo y eventos de cada noche); **panel del manager** (su equipo y eventos); **página pública del boliche**; pruebas de que cada local ve únicamente lo suyo. Todo con el estilo actual del front | ✅ Terminada: base de datos, API y front, probados |
+| **1B** | Boliches funcionales: ficha del local (descripción, ubicación, capacidad, fotos con portada), **entradas por evento** (tandas y VIP con precio virtual y de puerta, cupo y estado), **carta de bebidas**, **mesas VIP**, **colores propios** del boliche (claro y oscuro) y página pública completa | 🟡 Base de datos y API listas y probadas (291 checks); front: faltan las pestañas y la página pública nueva |
 | **2** | Entradas: tandas, VIP, precios virtual y de puerta, capacidad; compra con nombre, apellido y DNI; QR de un solo uso y control en puerta | ⏳ |
 | **3** | Pagos: confirmación automática de la transferencia, avisos por WhatsApp y Gmail, comisión de la plataforma (6 %) | ⏳ Depende de definiciones |
 | **4** | RRPP: alta y asignación, talonarios con link propio, listas de invitados, comisión, rankings y resultados | ⏳ |
@@ -303,7 +316,7 @@ Para crear un superadmin real (sin los datos de prueba): `npm run crear-superadm
 
 # 6. Estado de avance
 
-Se actualiza con cada cambio importante. Última actualización: fase 1 terminada (base de datos, API y front).
+Se actualiza con cada cambio importante. Última actualización: fase 1B con base de datos y API terminadas; front en curso.
 
 ## 6.1 Lo que está hecho
 
@@ -331,6 +344,21 @@ Se actualiza con cada cambio importante. Última actualización: fase 1 terminad
 - Los bloques que llegan en otras fases (ingresos y gastos, ranking de RRPP, cobros, entradas) aparecen marcados como "disponible en la fase N".
 - Se quitaron las pantallas del sistema anterior. Probado en un navegador real con las cuentas demo, en los dos modos de color y en celular: alta de un evento y de un RRPP desde la pantalla, registro de un cliente y las vistas de cada rol.
 
+## 6.1B Fase 1B (boliches funcionales)
+
+**Hecho y probado**
+- **Base de datos:** tablas `boliche_foto`, `tipo_entrada`, `bebida`, `mesa_vip`, `evento_mesa_vip` y `boliche_tema`; `evento.imagen`; triggers de máximo 10 fotos y de cupos contra capacidad. Datos de prueba con entradas, bebidas y mesas. Migración `database/migraciones/fase_1b.sql` (idempotente, probada dos veces sobre una base de la fase 1: pasa las fotos viejas a `boliche_foto`).
+- **API:** fotos con portada, entradas por evento, bebidas con imagen, mesas VIP con imagen y las que ofrece cada evento, colores del boliche, y la página pública con todo junto (ver 7.1). Imágenes de eventos (flyer).
+- **Pruebas: 291 checks, todos OK** — `pruebas/api_plataforma.py` (82), `pruebas/api_imagenes.py` (42) y `pruebas/api_fase1b.py` (167: aislamiento entre boliches, permisos por rol, cupos vs. capacidad, nombres únicos, contraste de colores, archivos falsos, qué muestra el público).
+- **Front (piezas listas):** clientes HTTP nuevos (`api/plataforma.js`), reglas de contraste (`utils/colores.js`), `TemaBoliche` (colores propios del boliche con Ant Design aislado), `AccionesImagen`, `BotonesSesion`, formularios con mínimo/máximo (latitudes negativas) y `PaginaCrud` con `alCargar`. Las fotos del panel y de `/explorar` ya usan el modelo nuevo (portada y galería); el front compila.
+
+**Falta (front de la fase 1B)**
+- [ ] Pestañas del panel del boliche: **Entradas** (por evento, con cupos usados vs. capacidad), **Bebidas** (con imagen), **Mesas VIP** (catálogo y las que ofrece cada evento) y **Diseño** (editor de colores con vista previa y aviso de contraste). Admin y superadmin editan; manager y RRPP ven.
+- [ ] Datos del local: editar latitud y longitud, y botón "hacer portada" en las fotos.
+- [ ] **Página pública `/b/:subdominio`** con el diseño propio del boliche: abre en modo oscuro con botón claro/oscuro, portada, capacidad, ubicación, galería, eventos con sus entradas y mesas, mesas VIP y carta por categoría. Hoy muestra la ficha, las fotos y los eventos; el JSON del back ya trae todo lo demás.
+- [ ] Estilos `styles/boliche.css` (negro y dorado) y prueba en navegador real en los dos modos y en celular.
+- [ ] Confirmar con el equipo la tipografía de la sección y el alcance del diseño negro y dorado (¿solo la página pública o también el panel?).
+
 ## 6.2 Lo que falta de la fase 1
 
 Nada obligatorio. Mejoras menores anotadas:
@@ -344,7 +372,8 @@ Ver la tabla de la sección 3: entradas y QR (fase 2), pagos (fase 3), RRPP con 
 
 ## 6.4 Cosas a tener en cuenta
 
-- Las pruebas de la API borran y crean datos: correrlas solo sobre una base recién cargada (`./database/cargar_base.sh --reset`).
+- Las pruebas de la API borran y crean datos: correrlas solo sobre una base recién cargada (`./database/cargar_base.sh --reset`), una por vez: `npm run prueba-api`, `npm run prueba-imagenes` y `npm run prueba-fase1b`.
+- **Si ya tenías la base de la fase 1:** o la recreás con `./database/cargar_base.sh --reset`, o le aplicás `database/migraciones/fase_1b.sql` desde pgAdmin (conserva tus datos). Hay que reiniciar el back.
 - La dirección pública de cada boliche será `/b/:subdominio` hasta que se defina el dominio de la plataforma.
 - Un RRPP puede ir con un manager o directo con el admin (el manager es opcional, como dice Notion).
 - La verificación extra de los admins, los descuentos del cliente y el borrado de datos a los 3 meses no están hechos todavía; la tabla `usuario` ya guarda `ultima_actividad` para el borrado.
@@ -379,6 +408,24 @@ Todas las rutas empiezan con `/api`. Salvo las públicas, requieren `Authorizati
 
 Los errores devuelven `{ "mensaje": "..." }` con el código HTTP que corresponde (400 datos inválidos, 401 sin sesión, 403 sin permiso, 404 no existe o no es tuyo, 409 dato repetido).
 
+## 7.1 Rutas de la fase 1B
+
+Ahora cuelgan de `/boliches/:id` (404 si la persona no es del boliche). **Leen:** superadmin, admin, manager y RRPP. **Escriben:** superadmin y admin. Las imágenes se suben mandando el archivo como cuerpo (`Content-Type: image/jpeg|png|webp`, hasta 5 MB).
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET/POST /fotos` · `PUT/DELETE /fotos/:idFoto` | Fotos del boliche (máx. 10). `PUT {es_portada:true}` cambia la portada |
+| `GET/POST /eventos/:id/entradas` · `PUT/DELETE /eventos/:id/entradas/:idEntrada` | Tandas y VIP: `nombre, tipo, precio_virtual, precio_puerta, cupo, estado, orden` |
+| `GET/POST /bebidas` · `PUT/DELETE /bebidas/:idBebida` | Carta: `categoria, nombre, descripcion, precio, disponible` |
+| `POST/DELETE /bebidas/:idBebida/imagen` | Foto de la bebida |
+| `GET/POST /mesas-vip` · `PUT/DELETE /mesas-vip/:idMesa` | Mesas VIP: `nombre, capacidad, precio, descripcion, activa` |
+| `POST/DELETE /mesas-vip/:idMesa/imagen` | Foto de la mesa |
+| `GET /eventos/:id/mesas-vip` · `PUT /eventos/:id/mesas-vip/:idMesa` | Qué mesas ofrece el evento. `PUT {ofrecida, estado?}` |
+| `POST/DELETE /eventos/:id/imagen` | Flyer del evento |
+| `GET /tema` · `PUT /tema` · `DELETE /tema?modo=` | Colores del boliche. `PUT {modo, fondo, tarjetas, texto, acento}`; `DELETE` vuelve al negro y dorado |
+| `GET /publico/boliches/:subdominio` | Página pública: ficha, fotos (portada primero), colores, bebidas disponibles, mesas VIP activas y próximos eventos con sus entradas (sin cupo) y mesas |
+| `GET /publico/boliches` | Lista pública con `portada`, dirección y capacidad |
+
 ---
 
 # 8. Bitácora de trabajo
@@ -390,7 +437,7 @@ Qué se hizo y cuándo, en orden. Se agrega una línea por cada cambio important
 | 2026-10-27 | Copia del proyecto anterior a la carpeta `Proyecto`, con PostgreSQL local administrado desde pgAdmin 4 en lugar de Supabase; script `database/cargar_base.sh`; repo privado en GitHub |
 | 2026-10-27 | Corrección: el `.env` había perdido `JWT_SECRET` y el login fallaba; ahora el servidor avisa al arrancar si falta |
 | 2026-10-27 | Lectura de la página de Notion "Proyecto nuestro" y **documentación completa en este README** (secciones 1 a 4) |
-| 2026-10-27 | Decisión del equipo: conservar el estilo del front (tipografía griega, mármol, modo oscuro de Ares) y cambiar todo lo demás; el sistema anterior se reemplaza en esta rama y `main` lo conserva |
+| 2026-10-27 | Decisión del equipo: conservar el estilo del front (tipografía griega, mármol, modo oscuro de Ares) y cambiar todo lo demás; el sistema anterior se reemplaza por completo; todo el trabajo se hace en `main` |
 | 2026-10-27 | Historial de git limpio, con un único autor |
 | 2026-10-27 | **Base de datos:** esquema multi-boliche con los 5 roles; la separación por local queda garantizada por la base (claves compuestas y triggers); 14 reglas probadas a mano |
 | 2026-10-27 | **API:** autenticación de los 5 roles, boliches y sus admins, equipo de RRPP con comisión, eventos y parte pública; un único middleware decide el acceso a cada boliche |
@@ -400,4 +447,10 @@ Qué se hizo y cuándo, en orden. Se agrega una línea por cada cambio important
 | 2026-10-27 | **Front:** ficha del boliche con eventos, equipo de RRPP y datos del local (el superadmin suma y quita admins) |
 | 2026-10-27 | **Front:** parte pública (`/explorar` y `/b/:subdominio`); el cliente se registra y entra a la lista de boliches |
 | 2026-10-27 | README del front reescrito para la plataforma; estado de la fase 1: terminada |
-| *Próximo* | **Fase 2:** tandas de entradas y VIP, precios virtual y de puerta, compra con nombre, apellido y DNI, y QR de un solo uso |
+| 2026-10-27 | Historial unificado: todo en `main` (una sola rama); commit automático cada 10 minutos |
+| 2026-10-27 | **Fase 1B, base de datos:** fotos con portada, entradas por evento, bebidas, mesas VIP y colores del boliche; triggers de cupos y de máximo de fotos; migración `fase_1b.sql` probada sobre una base vieja |
+| 2026-10-27 | **Fase 1B, API:** controladores y rutas de fotos, entradas, bebidas, mesas VIP y colores; página pública completa; flyer de eventos |
+| 2026-10-27 | **Pruebas de la fase 1B:** `api_fase1b.py` (167 checks) y `api_imagenes.py` actualizado (42); con la fase 1 suman 291, todas OK |
+| 2026-10-27 | Corrección: el servidor se caía si Postgres cortaba una conexión inactiva; el pool ahora lo registra y sigue. También se corrigió `cargar_base.sh`, que chequeaba una tabla del sistema anterior |
+| 2026-10-27 | **Front 1B (parcial):** clientes HTTP, reglas de contraste, `TemaBoliche`, fotos con portada en el panel y en `/explorar`. Quedan las pestañas, el editor de colores y la página pública nueva (ver 6.1B) |
+| *Próximo* | **Terminar el front de la fase 1B** (ver 6.1B) y después la **fase 2:** tandas de entradas y VIP, precios virtual y de puerta, compra con nombre, apellido y DNI, y QR de un solo uso |
