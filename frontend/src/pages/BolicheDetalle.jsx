@@ -1,8 +1,13 @@
-import { ArrowLeftOutlined, DeleteOutlined, GlobalOutlined, InstagramOutlined, PictureOutlined, WhatsAppOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, DeleteOutlined, EnvironmentOutlined, GlobalOutlined, InstagramOutlined, StarOutlined, WhatsAppOutlined } from "@ant-design/icons";
 import { Alert, App, Button, Card, Descriptions, Empty, Image, Popconfirm, Result, Select, Skeleton, Space, Tabs, Tag } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { apiDeBoliche, bolichesApi, imagenesApi, usuariosApi } from "../api/plataforma.js";
+import { apiDeBoliche, bolichesApi, fotosApi, imagenesApi, usuariosApi } from "../api/plataforma.js";
+import AccionesImagen from "../components/AccionesImagen.jsx";
+import PestanaBebidas from "../components/boliche/PestanaBebidas.jsx";
+import PestanaDiseno from "../components/boliche/PestanaDiseno.jsx";
+import PestanaEntradas from "../components/boliche/PestanaEntradas.jsx";
+import PestanaMesas from "../components/boliche/PestanaMesas.jsx";
 import Estado from "../components/Estado.jsx";
 import FormModal from "../components/FormModal.jsx";
 import PaginaCrud from "../components/PaginaCrud.jsx";
@@ -56,29 +61,12 @@ function PestanaEventos({ idBoliche }) {
       // Subir, cambiar o quitar el flyer del evento: lo hace quien puede editar el evento.
       acciones: (e, { recargar }) =>
         puedeEditarEvento(permisos, e) && (
-          <>
-            <SubirImagen
-              tipo="text"
-              texto={e.imagen ? "Cambiar imagen" : "Imagen"}
-              icono={<PictureOutlined />}
-              onSubir={(archivo) => imagenesApi.subirImagenEvento(idBoliche, e.id_evento, archivo)}
-              alTerminar={recargar}
-            />
-            {e.imagen && (
-              <Popconfirm
-                title="¿Quitar la imagen del evento?"
-                okText="Quitar"
-                cancelText="Cancelar"
-                okButtonProps={{ danger: true }}
-                onConfirm={async () => {
-                  await imagenesApi.borrarImagenEvento(idBoliche, e.id_evento);
-                  await recargar();
-                }}
-              >
-                <Button type="text" danger icon={<DeleteOutlined />} aria-label="Quitar imagen" />
-              </Popconfirm>
-            )}
-          </>
+          <AccionesImagen
+            imagen={e.imagen}
+            recargar={recargar}
+            onSubir={(archivo) => imagenesApi.subirImagenEvento(idBoliche, e.id_evento, archivo)}
+            onBorrar={() => imagenesApi.borrarImagenEvento(idBoliche, e.id_evento)}
+          />
         ),
       columnas: [
         { titulo: "Imagen", render: (e) => (e.imagen ? <Image src={e.imagen} alt={e.nombre} width={48} height={48} style={{ objectFit: "cover", borderRadius: 8 }} /> : "—") },
@@ -195,7 +183,9 @@ function PestanaDatos({ boliche, recargar }) {
   const campos = [
     { name: "nombre", label: "Nombre", required: true },
     { name: "direccion", label: "Dirección" },
-    { name: "capacidad", label: "Capacidad (personas)", type: "number" },
+    { name: "capacidad", label: "Capacidad (personas)", type: "number", min: 1, ayuda: "Las entradas de cada evento no pueden repartir más que esto." },
+    { name: "latitud", label: "Latitud", type: "number", min: -90, max: 90, step: 0.0001, ayuda: "Opcional. Con latitud y longitud el mapa marca el punto exacto." },
+    { name: "longitud", label: "Longitud", type: "number", min: -180, max: 180, step: 0.0001 },
     { name: "whatsapp", label: "WhatsApp" },
     { name: "instagram", label: "Instagram", ayuda: "Por ejemplo @miboliche" },
     { name: "descripcion", label: "Descripción", type: "textarea" },
@@ -226,6 +216,12 @@ function PestanaDatos({ boliche, recargar }) {
           items={[
             { key: "direccion", label: "Dirección", children: boliche.direccion ?? "—" },
             { key: "capacidad", label: "Capacidad", children: boliche.capacidad ? `${boliche.capacidad.toLocaleString("es-AR")} personas` : "—" },
+            {
+              key: "ubicacion", label: "Ubicación",
+              children: boliche.latitud != null && boliche.longitud != null
+                ? <a href={`https://www.google.com/maps?q=${boliche.latitud},${boliche.longitud}`} target="_blank" rel="noreferrer"><EnvironmentOutlined /> {Number(boliche.latitud).toFixed(4)}, {Number(boliche.longitud).toFixed(4)}</a>
+                : <span className="muted">Sin coordenadas</span>,
+            },
             { key: "pagina", label: "Página", children: <a href={`/b/${boliche.subdominio}`}>/b/{boliche.subdominio}</a> },
             { key: "instagram", label: "Instagram", children: boliche.instagram ? <span><InstagramOutlined /> {boliche.instagram}</span> : "—" },
             { key: "whatsapp", label: "WhatsApp", children: boliche.whatsapp ? <span><WhatsAppOutlined /> {boliche.whatsapp}</span> : "—" },
@@ -237,7 +233,7 @@ function PestanaDatos({ boliche, recargar }) {
 
       <Card
         variant="borderless"
-        title="Fotos del local"
+        title="Fotos del local (la primera es la portada)"
         extra={
           permisos.puedeEditarLocal && (
             <SubirImagen texto="Subir foto" onSubir={(archivo) => imagenesApi.subirFoto(boliche.id_boliche, archivo)} alTerminar={recargar} />
@@ -252,6 +248,11 @@ function PestanaDatos({ boliche, recargar }) {
               {boliche.fotos.map((foto) => (
                 <div key={foto.id_foto} className="galeria-foto">
                   <Image src={foto.url} alt={boliche.nombre} />
+                  {foto.es_portada && <Tag color="gold" className="galeria-portada">Portada</Tag>}
+                  {permisos.puedeEditarLocal && !foto.es_portada && (
+                    <Button className="galeria-estrella" shape="circle" icon={<StarOutlined />} aria-label="Hacer portada" title="Hacer portada"
+                      onClick={() => accion(fotosApi.marcarPortada(boliche.id_boliche, foto.id_foto), "Portada cambiada")} />
+                  )}
                   {permisos.puedeEditarLocal && (
                     <Popconfirm
                       title="¿Borrar esta foto?"
@@ -331,7 +332,7 @@ function PestanaDatos({ boliche, recargar }) {
   );
 }
 
-// Ficha de un boliche: sus eventos, su equipo y sus datos. La ven el superadmin, el admin del boliche, su manager y sus RRPP.
+// Ficha de un boliche: sus eventos, entradas, bebidas, mesas VIP, colores, equipo y datos del local. La ven el superadmin, el admin del boliche, su manager y sus RRPP.
 // Quien no es del boliche recibe un 404 del back, y acá se muestra como "no existe".
 export default function BolicheDetalle() {
   const { id } = useParams();
@@ -378,6 +379,10 @@ export default function BolicheDetalle() {
 
   const pestanas = [
     { key: "eventos", label: "Eventos", children: <PestanaEventos idBoliche={boliche.id_boliche} /> },
+    { key: "entradas", label: "Entradas", children: <PestanaEntradas boliche={boliche} /> },
+    { key: "bebidas", label: "Bebidas", children: <PestanaBebidas idBoliche={boliche.id_boliche} /> },
+    { key: "mesas", label: "Mesas VIP", children: <PestanaMesas idBoliche={boliche.id_boliche} /> },
+    { key: "diseno", label: "Diseño", children: <PestanaDiseno idBoliche={boliche.id_boliche} /> },
     ...(permisos.puedeVerEquipo ? [{ key: "equipo", label: "Equipo", children: <PestanaEquipo idBoliche={boliche.id_boliche} /> }] : []),
     { key: "datos", label: "Datos del local", children: <PestanaDatos boliche={boliche} recargar={cargar} /> },
   ];

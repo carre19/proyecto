@@ -1,0 +1,423 @@
+/* Sección del boliche: la página pública /b/:subdominio y la vista previa del editor de colores.
+   Los colores salen de 4 variables que pone components/boliche/TemaBoliche.jsx para cada boliche y cada modo:
+   --b-fondo, --b-tarjetas, --b-texto y --b-acento (por defecto, negro y dorado). La tipografía es la de la app. */
+
+.bol {
+  --b-suave: color-mix(in srgb, var(--b-texto) 78%, var(--b-fondo));
+  --b-linea: color-mix(in srgb, var(--b-texto) 18%, transparent);
+  --b-velo: color-mix(in srgb, var(--b-acento) 16%, transparent);
+  background: var(--b-fondo);
+  color: var(--b-texto);
+  font-family: var(--sans);
+}
+
+.bol :where(h1, h2, h3, h4, p, span, strong, li, div, a) {
+  color: inherit;
+}
+
+.bol :where(h1, h2, h3, h4) {
+  font-family: var(--display);
+  letter-spacing: .02em;
+  margin: 0;
+}
+
+.bol :where(p) {
+  margin: 0;
+}
+
+.bol-pagina {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.bol-barra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 48px;
+  border-bottom: 1px solid var(--b-linea);
+}
+
+.bol a.bol-volver {
+  color: var(--b-acento);
+  font-family: var(--display);
+  font-weight: 700;
+}
+
+.bol-portada {
+  background: linear-gradient(135deg, var(--b-velo), transparent 60%), var(--b-tarjetas);
+  background-size: cover;
+  background-position: center;
+}
+
+.bol-portada-velo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 72px 48px 56px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.bol-portada--foto {
+  position: relative;
+}
+
+.bol-portada--foto .bol-portada-velo {
+  background: linear-gradient(to top, var(--b-fondo) 8%, color-mix(in srgb, var(--b-fondo) 55%, transparent));
+  max-width: none;
+  padding-top: 140px;
+}
+
+.bol-portada--foto .bol-portada-velo > * {
+  width: 100%;
+  max-width: 1004px;
+  margin-inline: auto;
+}
+
+.bol-portada h1 {
+  font-size: clamp(34px, 6vw, 64px);
+  line-height: 1.05;
+  color: var(--b-texto);
+}
+
+.bol-lead {
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: 720px;
+  color: var(--b-suave);
+}
+
+.bol-etiqueta {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: .14em;
+  font-weight: 700;
+  color: var(--b-acento);
+}
+
+.bol-dato {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--b-linea);
+  background: var(--b-tarjetas);
+}
+
+.bol-cuerpo {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 48px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.bol-cuerpo h2 {
+  font-size: 26px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--b-acento);
+  display: inline-block;
+}
+
+.bol-cuerpo h3 {
+  font-size: 20px;
+}
+
+.bol-galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.bol-galeria .ant-image,
+.bol-galeria img {
+  width: 100%;
+  border-radius: 12px;
+}
+
+.bol-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.bol-grilla--eventos {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+}
+
+.bol-grilla--carta {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.bol-tarjeta {
+  background: var(--b-tarjetas);
+  border: 1px solid var(--b-linea);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.bol-tarjeta-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+}
+
+.bol-flyer {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+.bol-flyer--baja {
+  height: 160px;
+}
+
+.bol-artistas {
+  font-weight: 700;
+}
+
+.bol-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bol-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--b-linea);
+  font-size: 13px;
+}
+
+.bol-chip--acento {
+  border-color: var(--b-acento);
+  color: var(--b-acento);
+}
+
+.bol-bloque {
+  border-top: 1px solid var(--b-linea);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bol-bloque h4 {
+  font-size: 14px;
+  letter-spacing: .1em;
+  color: var(--b-acento);
+}
+
+.bol-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bol-lista li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.bol-lista li .bol-chip {
+  margin-left: 8px;
+}
+
+.bol-estado {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.bol-estado--si {
+  background: var(--b-acento);
+  color: var(--b-sobre-acento);
+}
+
+.bol-estado--no {
+  border: 1px solid var(--b-linea);
+  color: var(--b-suave);
+}
+
+.bol-apagado strong,
+.bol-apagado .bol-suave {
+  opacity: .7;
+}
+
+.bol-precio {
+  font: 700 20px var(--display);
+  color: var(--b-acento);
+}
+
+.bol-categoria + .bol-categoria {
+  margin-top: 28px;
+}
+
+.bol-categoria h3 {
+  margin-bottom: 14px;
+  color: var(--b-acento);
+}
+
+.bol-bebida {
+  display: flex;
+  align-items: stretch;
+}
+
+.bol-bebida .bol-tarjeta-cuerpo {
+  flex: 1;
+  padding: 14px 16px;
+}
+
+.bol-bebida-foto {
+  width: 96px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.bol-bebida-titulo {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bol-bebida-titulo .bol-precio {
+  font-size: 17px;
+  white-space: nowrap;
+}
+
+.bol-aviso {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--b-suave);
+}
+
+.bol-pie {
+  padding: 20px 48px;
+  border-top: 1px solid var(--b-linea);
+  text-align: center;
+  font-size: 14px;
+  color: var(--b-suave);
+}
+
+/* Al final para que gane sobre el color heredado de arriba. */
+.bol .bol-suave {
+  color: var(--b-suave);
+}
+
+.bol .bol-etiqueta,
+.bol .bol-precio,
+.bol .bol-chip--acento {
+  color: var(--b-acento);
+}
+
+.bol .bol-estado--si {
+  color: var(--b-sobre-acento);
+}
+
+/* Vista previa en el editor de colores del panel. */
+.bol-vista-previa {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid var(--b-linea);
+}
+
+.diseno-boliche {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.diseno-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.diseno-reglas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.diseno-reglas .cumple .anticon {
+  color: var(--lime);
+}
+
+.diseno-reglas .no-cumple .anticon {
+  color: var(--red);
+}
+
+@media (max-width: 900px) {
+  .diseno-boliche {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .bol-barra,
+  .bol-pie {
+    padding-inline: 18px;
+  }
+
+  .bol-portada-velo {
+    padding: 40px 18px 36px;
+  }
+
+  .bol-portada--foto .bol-portada-velo {
+    padding-top: 90px;
+  }
+
+  .bol-cuerpo {
+    padding: 28px 18px 40px;
+    gap: 36px;
+  }
+
+  .bol-grilla--eventos {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Fotos del local en el panel: etiqueta de portada y botón para elegirla. */
+.galeria-foto .galeria-portada {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  margin: 0;
+}
+
+.galeria-foto .galeria-estrella {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
