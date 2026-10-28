@@ -10,7 +10,8 @@
     "crear-superadmin": "node scripts/crear_superadmin.js",
     "prueba-api": "python3 pruebas/api_plataforma.py",
     "prueba-imagenes": "python3 pruebas/api_imagenes.py",
-    "prueba-fase1b": "python3 pruebas/api_fase1b.py"
+    "prueba-fase1b": "python3 pruebas/api_fase1b.py",
+    "prueba-fase2": "python3 pruebas/api_fase2.py"
   },
   "license": "ISC",
   "dependencies": {

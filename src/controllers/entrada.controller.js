@@ -125,6 +125,11 @@ export const editarEntrada = async (req, res) => {
             return res.status(400).json({mensaje: "no hay nada para modificar"});
         }
 
+        if(datos.estado !== undefined){
+            // El estado puesto a mano manda: deja de ser una "agotada sola".
+            campos.push("agotada_auto");
+            datos.agotada_auto = false;
+        }
         const asignaciones = campos.map((campo, i) => `${campo} = $${i + 1}`).join(", ");
         const editada = await pool.query(
             `UPDATE tipo_entrada SET ${asignaciones} WHERE id_boliche = $${campos.length + 1} AND id_evento = $${campos.length + 2} AND id_tipo_entrada = $${campos.length + 3}
@@ -161,6 +166,9 @@ export const eliminarEntrada = async (req, res) => {
 
         res.json({mensaje: "entrada eliminada"});
     } catch(error){
+        if(responderErrorDeBase(error, res)){
+            return;
+        }
         console.error(error);
         res.status(500).json({mensaje: "no se pudo eliminar la entrada"});
     }

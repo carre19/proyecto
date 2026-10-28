@@ -7,6 +7,8 @@ import { borrarImagenBebida, crearBebida, editarBebida, eliminarBebida, listarBe
 import { borrarImagenMesa, crearMesa, editarMesa, eliminarMesa, listarMesas, listarMesasDelEvento, ofrecerMesa, subirImagenMesa } from "../controllers/mesa.controller.js";
 import { guardarTema, restablecerTema, verTema } from "../controllers/tema.controller.js";
 import { recibirImagen } from "../middleware/imagen.js";
+import { cancelarCompra, listarVentas, pagarCompra, ventaPuerta } from "../controllers/venta.controller.js";
+import { buscarPorDni, escanear, reingreso, resumenPuerta, ultimosAccesos } from "../controllers/puerta.controller.js";
 import { crearMiembro, darDeBaja, editarMiembro, listarEquipo } from "../controllers/equipo.controller.js";
 import { borrarImagenEvento, crearEvento, editarEvento, eliminarEvento, listarEventos, subirImagenEvento, verEvento } from "../controllers/evento.controller.js";
 
@@ -79,6 +81,20 @@ delBoliche.put("/eventos/:idEvento/entradas/:idEntrada", edita, editarEntrada);
 delBoliche.delete("/eventos/:idEvento/entradas/:idEntrada", edita, eliminarEntrada);
 delBoliche.get("/eventos/:idEvento/mesas-vip", listarMesasDelEvento);
 delBoliche.put("/eventos/:idEvento/mesas-vip/:idMesa", edita, ofrecerMesa);
+
+// Ventas (fase 2). Las ve cada rol según corresponda (el RRPP solo las suyas); confirmar o cancelar pagos lo hacen el admin y el manager;
+// vender en la puerta y controlar los QR también el RRPP.
+const equipoCompleto = soloRoles(SUPERADMIN, ADMIN, MANAGER, RRPP);
+const gestionaPagos = soloRoles(SUPERADMIN, ADMIN, MANAGER);
+delBoliche.get("/eventos/:idEvento/ventas", listarVentas);
+delBoliche.put("/compras/:idCompra/pagar", gestionaPagos, pagarCompra);
+delBoliche.put("/compras/:idCompra/cancelar", gestionaPagos, cancelarCompra);
+delBoliche.post("/eventos/:idEvento/venta-puerta", equipoCompleto, ventaPuerta);
+delBoliche.post("/eventos/:idEvento/puerta/escanear", equipoCompleto, escanear);
+delBoliche.post("/eventos/:idEvento/puerta/buscar", equipoCompleto, buscarPorDni);
+delBoliche.post("/eventos/:idEvento/puerta/reingreso", equipoCompleto, reingreso);
+delBoliche.get("/eventos/:idEvento/puerta/resumen", equipoCompleto, resumenPuerta);
+delBoliche.get("/eventos/:idEvento/puerta/accesos", equipoCompleto, ultimosAccesos);
 
 // Flyer del evento: lo cambia quien puede editar el evento (el manager, solo los suyos).
 delBoliche.post("/eventos/:idEvento/imagen", soloRoles(SUPERADMIN, ADMIN, MANAGER), recibirImagen, subirImagenEvento);

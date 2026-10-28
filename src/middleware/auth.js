@@ -12,9 +12,16 @@ export const CLIENTE = "cliente";
 // cambiarle el rol o los boliches vale al instante. Deja en req.usuario:
 //   { id, email, nombre, apellido, nombre_completo, rol, boliches: [ids de los boliches a los que accede] }
 // Admin: los de boliche_admin. Manager y RRPP: el de boliche_equipo. Superadmin: todos. Cliente: ninguno.
-export const verificarToken = async (req, res, next) => {
+export const verificarToken = (req, res, next) => autenticar(req, res, next, true);
+
+// Para rutas públicas que cambian si hay sesión (por ejemplo, comprar una entrada con la cuenta del cliente):
+// sin token sigue como anónimo; con un token inválido responde 401 en vez de ignorarlo en silencio.
+export const tokenOpcional = (req, res, next) => autenticar(req, res, next, false);
+
+const autenticar = async (req, res, next, obligatorio) => {
   const cabecera = req.headers.authorization;
   if (!cabecera || !cabecera.startsWith("Bearer ")) {
+    if (!obligatorio) return next();
     return res.status(401).json({ mensaje: "Token no proporcionado" });
   }
 

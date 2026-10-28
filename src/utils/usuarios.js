@@ -23,12 +23,17 @@ export const responderErrorDeBase = (error, res) => {
             : error.constraint === "bebida_nombre_key" ? "ya cargaste una bebida con ese nombre en esa categoría"
             : error.constraint === "mesa_vip_nombre_key" ? "ya hay una mesa VIP con ese nombre"
             : error.constraint === "boliche_foto_portada_key" ? "el boliche ya tiene una foto de portada"
+            : error.constraint === "entrada_dni_evento_key" ? `el DNI ${/dni\)=\(\d+, (\d+)\)/.exec(error.detail ?? "")?.[1] ?? ""} ya tiene una entrada para este evento (la entrada es personal)`.replace("DNI  ", "DNI ")
             : "ese dato ya existe";
         res.status(409).json({mensaje});
         return true;
     }
     if(error.code === "P0001"){
         res.status(400).json({mensaje: error.message});
+        return true;
+    }
+    if(error.code === "23503" && ["entrada_tipo_fkey", "compra_evento_fkey", "entrada_compra_fkey"].includes(error.constraint)){
+        res.status(409).json({mensaje: error.constraint === "entrada_tipo_fkey" ? "ya se vendieron entradas de este tipo: no se puede borrar" : "ya hay ventas en este evento: cancelalo en vez de borrarlo"});
         return true;
     }
     if(error.code === "23514" || error.code === "23503"){

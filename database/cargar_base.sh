@@ -4,6 +4,8 @@
 # Es lo mismo que hacer a mano en pgAdmin 4: crear la base y ejecutar 00_schema.sql y 01_datos_prueba.sql.
 #   ./database/cargar_base.sh           -> crea la base y la carga (si ya tiene tablas, no toca nada)
 #   ./database/cargar_base.sh --reset   -> BORRA la base y la vuelve a crear (se pierden los datos)
+#   ./database/cargar_base.sh --migrar  -> si ya tenés la base de una fase anterior: le aplica las fases nuevas
+#                                          (database/00_schema_faseN.sql, se pueden repetir) sin tocar tus datos
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -13,6 +15,15 @@ export PGPASSWORD="${DB_PASSWORD:-}"
 [ -n "$PGPASSWORD" ] || { echo "Completá DB_PASSWORD en el .env con la contraseña de tu Postgres"; exit 1; }
 
 PSQL=(psql -h "${DB_HOST:-localhost}" -p "${DB_PORT:-5432}" -U "${DB_USER:-postgres}" -v ON_ERROR_STOP=1 -q)
+
+if [ "${1:-}" = "--migrar" ]; then
+  for archivo in $(LC_ALL=C ls database/00_schema_fase*.sql); do
+    echo ">> Aplicando $archivo..."
+    "${PSQL[@]}" -d "$DB_NAME" -f "$archivo"
+  done
+  echo ">> Listo: la base $DB_NAME quedó al día."
+  exit 0
+fi
 
 if [ "${1:-}" = "--reset" ]; then
   echo ">> Borrando la base $DB_NAME..."
@@ -29,7 +40,8 @@ if [ -n "$("${PSQL[@]}" -d "$DB_NAME" -Atc "SELECT to_regclass('public.boliche')
   exit 0
 fi
 
-for archivo in 00_schema.sql 01_datos_prueba.sql; do
+# Orden fijo (el esquema base, las fases en orden y al final los datos), sin depender del idioma del sistema.
+for archivo in $(cd database && LC_ALL=C ls 00_schema*.sql) 01_datos_prueba.sql; do
   echo ">> Ejecutando $archivo..."
   "${PSQL[@]}" -d "$DB_NAME" -f "database/$archivo"
 done
