@@ -19,9 +19,9 @@ const eventoDelBoliche = async (req, res) => {
     return evento;
 };
 
-const registrar = (req, evento, idEntrada, resultado, detalle = null) => pool.query(
-    `INSERT INTO acceso_puerta (id_boliche, id_evento, id_entrada, resultado, id_usuario, detalle) VALUES ($1, $2, $3, $4, $5, $6)`,
-    [req.boliche.id_boliche, evento.id_evento, idEntrada, resultado, req.usuario.id, detalle]);
+const registrar = (req, evento, idEntrada, resultado, detalle = null, idInvitado = null) => pool.query(
+    `INSERT INTO acceso_puerta (id_boliche, id_evento, id_entrada, resultado, id_usuario, detalle, id_invitado) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [req.boliche.id_boliche, evento.id_evento, idEntrada, resultado, req.usuario.id, detalle, idInvitado]);
 
 // Lo que ve quien está en la puerta de la persona: nombre, DNI (para compararlo con el físico) y tipo de entrada.
 const datosPuerta = (req, e) => ({
@@ -90,10 +90,48 @@ export const buscarPorDni = async (req, res) => {
         const entradas = (await pool.query(`${SELECT_ENTRADA} WHERE e.id_boliche = $1 AND e.id_evento = $2 AND e.dni = $3 AND e.estado <> 'anulada' ORDER BY e.id_entrada`,
             [req.boliche.id_boliche, evento.id_evento, dni])).rows;
 
-        res.json(entradas.map((e) => datosPuerta(req, e)));
+        // También se busca en las listas de invitados: esos no tienen QR, entran con su DNI.
+        const invitados = (await pool.query(`
+            SELECT i.id_invitado, i.nombre, i.apellido, i.dni, i.ingreso_en, l.nombre AS lista, u.nombre_completo AS rrpp
+              FROM invitado i JOIN lista_invitados l ON l.id_boliche = i.id_boliche AND l.id_lista = i.id_lista JOIN usuario u ON u.id_usuario = l.id_rrpp
+             WHERE i.id_boliche = $1 AND i.id_evento = $2 AND i.dni = $3`, [req.boliche.id_boliche, evento.id_evento, dni])).rows;
+
+        res.json([
+            ...entradas.map((e) => ({ ...datosPuerta(req, e), origen: "entrada" })),
+            ...invitados.map((i) => ({
+                origen: "lista", id_invitado: i.id_invitado, nombre: i.nombre, apellido: i.apellido, dni: puedeVerDni(req.usuario.rol) ? i.dni : enmascarar(i.dni),
+                tipo: `Lista "${i.lista}" de ${i.rrpp}`, estado: i.ingreso_en ? "usada" : "en_lista", usada_en: i.ingreso_en,
+            })),
+        ]);
     } catch (error) {
         console.error(error);
         res.status(500).json({ mensaje: "no se pudo buscar" });
+    }
+};
+
+// POST .../puerta/invitado {id_invitado} — deja entrar a alguien de una lista de invitados (una sola vez).
+export const ingresarInvitado = async (req, res) => {
+    try {
+        const evento = await eventoDelBoliche(req, res);
+        if (!evento) return;
+        const idInvitado = parseId(req.body?.id_invitado);
+        if (idInvitado === null) return res.status(400).json({ mensaje: "el id del invitado no es valido" });
+
+        const entro = (await pool.query(`
+            UPDATE invitado SET ingreso_en = now(), ingreso_por = $4 WHERE id_boliche = $1 AND id_evento = $2 AND id_invitado = $3 AND ingreso_en IS NULL
+            RETURNING nombre, apellido, dni, ingreso_en`, [req.boliche.id_boliche, evento.id_evento, idInvitado, req.usuario.id])).rows[0];
+        if (!entro) {
+            const existe = (await pool.query(`SELECT nombre, apellido, dni, ingreso_en FROM invitado WHERE id_boliche = $1 AND id_evento = $2 AND id_invitado = $3`, [req.boliche.id_boliche, evento.id_evento, idInvitado])).rows[0];
+            if (!existe) return res.status(404).json({ resultado: "no_encontrada", mensaje: "ese invitado no está en las listas de este evento" });
+            await registrar(req, evento, null, "rechazada_usada", "invitado de lista que ya había entrado", idInvitado);
+            return res.status(409).json({ resultado: "rechazada_usada", mensaje: "este invitado ya entró", invitado: { nombre: existe.nombre, apellido: existe.apellido, usada_en: existe.ingreso_en } });
+        }
+        await registrar(req, evento, null, "ingreso_lista", null, idInvitado);
+
+        res.json({ resultado: "ingreso_lista", mensaje: "puede pasar", invitado: { nombre: entro.nombre, apellido: entro.apellido, dni: puedeVerDni(req.usuario.rol) ? entro.dni : enmascarar(entro.dni), usada_en: entro.ingreso_en } });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mensaje: "no se pudo registrar el ingreso" });
     }
 };
 
@@ -126,7 +164,9 @@ export const resumenPuerta = async (req, res) => {
             SELECT count(*) FILTER (WHERE estado IN ('valida', 'usada')) AS pagadas,
                    count(*) FILTER (WHERE estado = 'usada') AS ingresaron,
                    count(*) FILTER (WHERE estado = 'valida') AS faltan,
-                   count(*) FILTER (WHERE estado = 'pendiente') AS pendientes_de_pago
+                   count(*) FILTER (WHERE estado = 'pendiente') AS pendientes_de_pago,
+                   (SELECT count(*) FROM invitado WHERE id_boliche = $1 AND id_evento = $2) AS invitados,
+                   (SELECT count(*) FROM invitado WHERE id_boliche = $1 AND id_evento = $2 AND ingreso_en IS NOT NULL) AS invitados_ingresaron
               FROM entrada WHERE id_boliche = $1 AND id_evento = $2`, [req.boliche.id_boliche, evento.id_evento])).rows[0];
 
         res.json({ evento: evento.nombre, capacidad: req.boliche.capacidad, ...Object.fromEntries(Object.entries(fila).map(([k, v]) => [k, Number(v)])) });
@@ -142,8 +182,8 @@ export const ultimosAccesos = async (req, res) => {
         const evento = await eventoDelBoliche(req, res);
         if (!evento) return;
         const accesos = (await pool.query(`
-            SELECT a.id_acceso, a.resultado, a.momento, a.detalle, e.nombre, e.apellido, u.nombre_completo AS registrado_por
-              FROM acceso_puerta a LEFT JOIN entrada e ON e.id_entrada = a.id_entrada LEFT JOIN usuario u ON u.id_usuario = a.id_usuario
+            SELECT a.id_acceso, a.resultado, a.momento, a.detalle, COALESCE(e.nombre, i.nombre) AS nombre, COALESCE(e.apellido, i.apellido) AS apellido, u.nombre_completo AS registrado_por
+              FROM acceso_puerta a LEFT JOIN entrada e ON e.id_entrada = a.id_entrada LEFT JOIN invitado i ON i.id_invitado = a.id_invitado LEFT JOIN usuario u ON u.id_usuario = a.id_usuario
              WHERE a.id_boliche = $1 AND a.id_evento = $2 ORDER BY a.momento DESC, a.id_acceso DESC LIMIT 50`, [req.boliche.id_boliche, evento.id_evento])).rows;
 
         res.json(accesos);

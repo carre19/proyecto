@@ -23,6 +23,8 @@ export const responderErrorDeBase = (error, res) => {
             : error.constraint === "bebida_nombre_key" ? "ya cargaste una bebida con ese nombre en esa categoría"
             : error.constraint === "mesa_vip_nombre_key" ? "ya hay una mesa VIP con ese nombre"
             : error.constraint === "boliche_foto_portada_key" ? "el boliche ya tiene una foto de portada"
+            : error.constraint === "invitado_dni_evento_key" ? "ese DNI ya está en las listas de invitados de este evento"
+            : error.constraint === "talonario_evento_rrpp_key" ? "ese RRPP ya tiene un talonario en este evento: editá la cantidad"
             : error.constraint === "entrada_dni_evento_key" ? `el DNI ${/dni\)=\(\d+, (\d+)\)/.exec(error.detail ?? "")?.[1] ?? ""} ya tiene una entrada para este evento (la entrada es personal)`.replace("DNI  ", "DNI ")
             : "ese dato ya existe";
         res.status(409).json({mensaje});

@@ -33,7 +33,7 @@ const eventoVendible = async (subdominio, idEvento) => (await pool.query(`
     [String(subdominio).toLowerCase(), idEvento])).rows[0];
 
 // POST /publico/boliches/:subdominio/eventos/:idEvento/comprar
-// {items: [{id_tipo_entrada, nombre, apellido, dni}], contacto_email?, contacto_telefono?}
+// {items: [{id_tipo_entrada, nombre, apellido, dni}], contacto_email?, contacto_telefono?, talonario?: código del link de un RRPP}
 // Se paga el precio virtual más el cargo de la plataforma; la compra queda pendiente hasta que llegue el pago.
 export const comprar = async (req, res) => {
     const cliente = await pool.connect();
@@ -54,9 +54,29 @@ export const comprar = async (req, res) => {
         }
 
         await cliente.query("BEGIN");
+        // Con el link de un RRPP (su talonario) la venta se le adjudica y cuenta contra las entradas que le asignaron.
+        let talonario = null;
+        if (req.body?.talonario !== undefined && req.body?.talonario !== null) {
+            talonario = (await cliente.query(`SELECT * FROM talonario WHERE codigo = $1 AND id_boliche = $2 AND id_evento = $3 FOR UPDATE`,
+                [String(req.body.talonario).toUpperCase(), evento.id_boliche, evento.id_evento])).rows[0];
+            if (!talonario) {
+                await cliente.query("ROLLBACK");
+                return res.status(404).json({ mensaje: "ese link de venta no existe para este evento" });
+            }
+            if (!talonario.activo) {
+                await cliente.query("ROLLBACK");
+                return res.status(409).json({ mensaje: "ese link de venta ya no está activo" });
+            }
+            const usadas = Number((await cliente.query(`SELECT count(*) AS n FROM compra c JOIN entrada e ON e.id_compra = c.id_compra WHERE c.id_talonario = $1 AND e.estado <> 'anulada'`, [talonario.id_talonario])).rows[0].n);
+            if (usadas + items.length > talonario.cantidad) {
+                await cliente.query("ROLLBACK");
+                return res.status(409).json({ mensaje: talonario.cantidad - usadas <= 0 ? "a este link de venta se le acabaron las entradas asignadas" : `a este link de venta le quedan ${talonario.cantidad - usadas} entradas` });
+            }
+        }
         const compra = await crearCompra(cliente, {
             boliche: evento, evento, items, canal: "web", metodo: "transferencia", contacto,
             idCliente: req.usuario?.rol === "cliente" ? req.usuario.id : null,
+            idRrpp: talonario?.id_rrpp ?? null, idTalonario: talonario?.id_talonario ?? null,
         });
         await sincronizarAgotadas(cliente, evento.id_boliche, evento.id_evento);
         await cliente.query("COMMIT");

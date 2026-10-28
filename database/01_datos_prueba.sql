@@ -115,4 +115,23 @@ SELECT b.id_boliche, c.titular, c.banco, c.alias, c.cbu, 'Transferí el total y 
     ('bar-dos', 'Bar Dos S.A.', 'Mercado Pago', 'bar.dos.cobros', NULL)
   ) AS c(sub, titular, banco, alias, cbu) ON c.sub = b.subdominio;
 
+-- ---------- Fase 4: talonario y lista de invitados de ejemplo (RRPP 1 en "Noche Electrónica") ----------
+INSERT INTO public.talonario (id_boliche, id_evento, id_rrpp, codigo, cantidad)
+SELECT e.id_boliche, e.id_evento, u.id_usuario, 'DEMORRPP1', 50
+  FROM public.evento e JOIN public.boliche b ON b.id_boliche = e.id_boliche AND b.subdominio = 'boliche-uno'
+  JOIN public.usuario u ON u.email = 'rrpp1@demo.com' WHERE e.nombre = 'Noche Electrónica';
+
+INSERT INTO public.lista_invitados (id_boliche, id_evento, id_rrpp, nombre)
+SELECT e.id_boliche, e.id_evento, u.id_usuario, 'Amigos de Lucas'
+  FROM public.evento e JOIN public.boliche b ON b.id_boliche = e.id_boliche AND b.subdominio = 'boliche-uno'
+  JOIN public.usuario u ON u.email = 'rrpp1@demo.com' WHERE e.nombre = 'Noche Electrónica';
+
+INSERT INTO public.invitado (id_boliche, id_evento, id_lista, nombre, apellido, dni, telefono, edad)
+SELECT l.id_boliche, l.id_evento, l.id_lista, i.nombre, i.apellido, i.dni, i.telefono, i.edad
+  FROM public.lista_invitados l JOIN (VALUES
+    ('Marcos', 'Ibarra', '35111222', '351 600 0001', 28),
+    ('Julia', 'Sosa', '36222333', '351 600 0002', 24)
+  ) AS i(nombre, apellido, dni, telefono, edad) ON true
+ WHERE l.nombre = 'Amigos de Lucas';
+
 COMMIT;
